@@ -8,21 +8,23 @@
 namespace vortex {
 using namespace mlir;
 
-/// Represents a single layer in a neural network model.
+// Represents a single layer in the model.
 struct NeuralNetworkLayer {
-    std::string name;
-    std::string type;  // e.g., "Dense", "Conv2D"
-    std::vector<int64_t> inputShape;
-    std::vector<int64_t> outputShape;
-    std::vector<float> weights;
-    std::vector<float> biases;
+    std::string name;              // Layer name (e.g., "Dense_1")
+    std::string type;              // Layer type (e.g., "Dense", "Conv2D", "Activation")
+    std::vector<int64_t> inputShape;  // Input tensor shape
+    std::vector<int64_t> outputShape; // Output tensor shape
+    std::vector<float> weights;    // Weights (for Dense, Conv2D, etc.)
+    std::vector<float> biases;     // Bias values
+    std::string activation;        // Activation function (e.g., "relu", "sigmoid")
+    bool isActivationLayer = false; // True if this is an activation-only layer
 };
 
-/// Reads an HDF5 file and constructs an AST-like representation of the model.
+// Parses an HDF5 model file.
 std::vector<NeuralNetworkLayer> parseHDF5(const std::string &filePath);
 
-/// Creates the MLIR pass that injects `run_model` and lowers to TOSA.
-std::unique_ptr<Pass> createHDF5ToTosaPass();
+// Creates an MLIR pass that injects `run_model` and lowers to TOSA.
+std::unique_ptr<Pass> createHDF5ToTosaPass(const std::string &modelFile);
 
 } // namespace vortex
 

@@ -21,6 +21,7 @@ option(VORTEX_INCLUDE_TESTS "Generate build targets for the MLIR Vortex unit tes
 
 find_package(HDF5 REQUIRED)
 find_package(MLIR REQUIRED CONFIG)
+find_package(nlohmann_json REQUIRED)
 
 message(STATUS "Using MLIRConfig.cmake in: ${MLIR_DIR}")
 message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
