@@ -8,6 +8,12 @@
 #include <iostream>
 #include <nlohmann/json.hpp>
 #include <H5Opublic.h>
+#include "Passes/handlers/DenseHandler.h"
+#include "Passes/handlers/Conv2DHandler.h"
+#include "Passes/handlers/SoftmaxHandler.h"
+#include "Passes/handlers/MaxPool2DHandler.h"
+#include "Passes/handlers/FlattenHandler.h"
+#include "Passes/handlers/ReLUHandler.h"
 
 using namespace mlir;
 
@@ -272,6 +278,7 @@ struct HDF5ToTosaPass : public PassWrapper<HDF5ToTosaPass, OperationPass<ModuleO
       // Process each layer. Here we demonstrate handling Dense layers.
       for (const auto &layer : layers) {
         if (layer.contains("class_name") && layer["class_name"].get<std::string>() == "Dense") {
+
           // Extract weight and bias data.
           std::vector<float> weightData, biasData;
           if (layer.contains("weights") && layer["weights"].contains("data"))
