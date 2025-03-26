@@ -25,7 +25,7 @@ namespace vortex{
     return DenseElementsAttr::get(type, apValues);
   }
 
-  void FlattenHandler::handleLayer(Builder& builder, FuncOp& funcOp, json& layer){
+  void FlattenHandler::handleLayer(OpBuilder& builder, FuncOp& funcOp, json& layer){
 
   }
 

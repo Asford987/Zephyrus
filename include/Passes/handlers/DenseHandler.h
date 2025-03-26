@@ -21,8 +21,7 @@ namespace vortex{
 
   class DenseHandler : public LayerHandler {
     public:
-      void handleLayer(Builder& builder, FuncOp& funcOp, json& layer);
+      void handleLayer(OpBuilder& builder, FuncOp& funcOp, const json& layer, std::vector<int64_t>& inputShape, mlir::Value& lastOutput);
   };
-
 
 } // namespace vortex

@@ -278,43 +278,63 @@ struct HDF5ToTosaPass : public PassWrapper<HDF5ToTosaPass, OperationPass<ModuleO
       // Process each layer. Here we demonstrate handling Dense layers.
       for (const auto &layer : layers) {
         if (layer.contains("class_name") && layer["class_name"].get<std::string>() == "Dense") {
-
-          // Extract weight and bias data.
-          std::vector<float> weightData, biasData;
-          if (layer.contains("weights") && layer["weights"].contains("data"))
-            weightData = layer["weights"]["data"].get<std::vector<float>>();
-          if (layer.contains("biases") && layer["biases"].contains("data"))
-            biasData = layer["biases"]["data"].get<std::vector<float>>();
-    
-          // Retrieve Dense layer configuration.
-          int units = layer["config"]["units"].get<int>();
-          int inputFeatures = inputShape.back();
-          // Define the weight and bias tensor shapes.
-          std::vector<int64_t> weightShape = {inputFeatures, units};
-          std::vector<int64_t> biasShape = {units};
-    
-          auto weightType = RankedTensorType::get(weightShape, builder.getF32Type());
-          auto biasType = RankedTensorType::get(biasShape, builder.getF32Type());
-    
-          auto weightAttr = convertToDenseAttr(builder, weightType, weightData);
-          auto biasAttr = convertToDenseAttr(builder, biasType, biasData);
-    
-          // Create constant ops for weights and biases.
-          Value weightTensor = builder.create<tosa::ConstOp>(funcOp.getLoc(), weightType, weightAttr);
-          Value biasTensor = builder.create<tosa::ConstOp>(funcOp.getLoc(), biasType, biasAttr);
-    
-          // Create TOSA MatMul and Add ops.
-          // For this example, assume the output of matmul replaces the last dimension with "units".
-          std::vector<int64_t> matmulOutputShape = inputShape;
-          matmulOutputShape.back() = units;
-          auto matmulOutputType = RankedTensorType::get(matmulOutputShape, builder.getF32Type());
-    
-          Value matmulOutput = builder.create<tosa::MatMulOp>(
-              funcOp.getLoc(), matmulOutputType, lastOutput, weightTensor);
-          lastOutput = builder.create<tosa::AddOp>(
-              funcOp.getLoc(), matmulOutputType, matmulOutput, biasTensor);
+          DenseHandler denseHandler;
+          denseHandler.handleLayer(builder, funcOp, layer, inputShape, lastOutput);
+        } else if (layer.contains("class_name") && layer["class_name"].get<std::string>() == "Conv2D") {
+          Conv2DHandler conv2DHandler;
+          conv2DHandler.handleLayer(builder, funcOp, layer, inputShape, lastOutput);
+        } else if (layer.contains("class_name") && layer["class_name"].get<std::string>() == "Flatten") {
+          FlattenHandler flattenHandler;
+          flattenHandler.handleLayer(builder, funcOp, layer, inputShape, lastOutput);
+        } else if (layer.contains("class_name") && layer["class_name"].get<std::string>() == "MaxPool2D") {
+          MaxPool2DHandler maxPool2DHandler;
+          maxPool2DHandler.handleLayer(builder, funcOp, layer, inputShape, lastOutput);
+        } else if (layer.contains("class_name") && layer["class_name"].get<std::string>() == "Softmax") {
+          SoftmaxHandler softmaxHandler;
+          softmaxHandler.handleLayer(builder, funcOp, layer, inputShape, lastOutput);
+        } else if (layer.contains("class_name") && layer["class_name"].get<std::string>() == "ReLU") {
+          ReLUHandler reluHandler;
+          reluHandler.handleLayer(builder, funcOp, layer, inputShape, lastOutput);
+        } else {
+          module.emitError("Unsupported layer type: " + layer["class_name"].get<std::string>());
+          return;
         }
-        // (Additional layer types such as Activation layers can be handled here.)
+        //   // Extract weight and bias data.
+        //   std::vector<float> weightData, biasData;
+        //   if (layer.contains("weights") && layer["weights"].contains("data"))
+        //     weightData = layer["weights"]["data"].get<std::vector<float>>();
+        //   if (layer.contains("biases") && layer["biases"].contains("data"))
+        //     biasData = layer["biases"]["data"].get<std::vector<float>>();
+    
+        //   // Retrieve Dense layer configuration.
+        //   int units = layer["config"]["units"].get<int>();
+        //   int inputFeatures = inputShape.back();
+        //   // Define the weight and bias tensor shapes.
+        //   std::vector<int64_t> weightShape = {inputFeatures, units};
+        //   std::vector<int64_t> biasShape = {units};
+    
+        //   auto weightType = RankedTensorType::get(weightShape, builder.getF32Type());
+        //   auto biasType = RankedTensorType::get(biasShape, builder.getF32Type());
+    
+        //   auto weightAttr = convertToDenseAttr(builder, weightType, weightData);
+        //   auto biasAttr = convertToDenseAttr(builder, biasType, biasData);
+    
+        //   // Create constant ops for weights and biases.
+        //   Value weightTensor = builder.create<tosa::ConstOp>(funcOp.getLoc(), weightType, weightAttr);
+        //   Value biasTensor = builder.create<tosa::ConstOp>(funcOp.getLoc(), biasType, biasAttr);
+    
+        //   // Create TOSA MatMul and Add ops.
+        //   // For this example, assume the output of matmul replaces the last dimension with "units".
+        //   std::vector<int64_t> matmulOutputShape = inputShape;
+        //   matmulOutputShape.back() = units;
+        //   auto matmulOutputType = RankedTensorType::get(matmulOutputShape, builder.getF32Type());
+    
+        //   Value matmulOutput = builder.create<tosa::MatMulOp>(
+        //       funcOp.getLoc(), matmulOutputType, lastOutput, weightTensor);
+        //   lastOutput = builder.create<tosa::AddOp>(
+        //       funcOp.getLoc(), matmulOutputType, matmulOutput, biasTensor);
+        // }
+        // // (Additional layer types such as Activation layers can be handled here.)
       }
     
       // Return the final output.

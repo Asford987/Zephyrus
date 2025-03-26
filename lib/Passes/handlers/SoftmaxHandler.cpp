@@ -25,7 +25,7 @@ namespace vortex{
     return DenseElementsAttr::get(type, apValues);
   }
 
-  void SoftmaxHandler::handleLayer(Builder& builder, FuncOp& funcOp, json& layer){
+  void SoftmaxHandler::handleLayer(OpBuilder& builder, FuncOp& funcOp, json& layer){
 
   }
 

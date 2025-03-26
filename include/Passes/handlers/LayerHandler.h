@@ -12,7 +12,7 @@ using mlir::func::FuncOp;
 namespace vortex {
   class LayerHandler {
     public:
-      virtual void handleLayer(Builder& builder, FuncOp& funcOp, json& layer) = 0;
+    virtual void handleLayer(OpBuilder& builder, FuncOp& funcOp, const json& layer, std::vector<int64_t>& inputShape, mlir::Value& lastOutput) = 0;
   };
 
 } // namespace vortex

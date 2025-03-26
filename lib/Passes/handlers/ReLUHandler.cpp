@@ -25,7 +25,7 @@ namespace vortex{
     return DenseElementsAttr::get(type, apValues);
   }
 
-  void ReLUHandler::handleLayer(Builder& builder, FuncOp& funcOp, json& layer){
+  void ReLUHandler::handleLayer(OpBuilder& builder, FuncOp& funcOp, json& layer){
 
   }
 

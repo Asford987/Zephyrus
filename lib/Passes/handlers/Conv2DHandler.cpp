@@ -25,7 +25,7 @@ namespace vortex{
     return DenseElementsAttr::get(type, apValues);
   }
 
-  void Conv2DHandler::handleLayer(Builder& builder, FuncOp& funcOp, json& layer){
+  void Conv2DHandler::handleLayer(OpBuilder& builder, FuncOp& funcOp, json& layer){
 
   }
 
