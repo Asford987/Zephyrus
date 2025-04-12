@@ -25,7 +25,7 @@ namespace vortex{
     return DenseElementsAttr::get(type, apValues);
   }
 
-  void MaxPool2DHandler::handleLayer(OpBuilder& builder, FuncOp& funcOp, json& layer){
+  void MaxPool2DHandler::handleLayer(OpBuilder& builder, FuncOp& funcOp, const json& layer, std::vector<int64_t>& inputShape, mlir::Value& lastOutput){
 
   }
 
