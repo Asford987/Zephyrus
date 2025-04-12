@@ -19,8 +19,22 @@ using mlir::func::FuncOp;
 
 namespace vortex{
   void FlattenHandler::handleLayer(OpBuilder& builder, FuncOp& funcOp, const json& layer, std::vector<int64_t>& inputShape, mlir::Value& lastOutput){
-    setup(layer, builder);
-    
+    // setup(layer, builder);
+    // Flatten all dimensions after batch
+    int64_t batchSize = inputShape[0];
+    int64_t flatSize = 1;
+    for (size_t i = 1; i < inputShape.size(); ++i) {
+        flatSize *= inputShape[i];
+    }
+
+    std::vector<int64_t> newShape = {batchSize, flatSize};
+    auto outputType = RankedTensorType::get(newShape, builder.getF32Type());
+
+    lastOutput = builder.create<tosa::ReshapeOp>(
+        funcOp.getLoc(), outputType, lastOutput,
+        builder.getI64ArrayAttr(newShape));
+
+    inputShape = newShape;    
   }
 
 } // namespace vortex
