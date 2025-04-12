@@ -10,7 +10,7 @@
 #include <H5Opublic.h>
 #include "Passes/handlers/ReadModel.h"
 
-namespace vortex {
+namespace zephyrus {
   using json = nlohmann::json;  // Alias for convenience
   json readModelConfig(const std::string &filePath) {
   try {
@@ -180,4 +180,4 @@ namespace vortex {
   }
   }
   }
-} // namespace vortex
+} // namespace zephyrus

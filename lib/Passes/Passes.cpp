@@ -2,7 +2,7 @@
 #include "Passes/HDF5ToTosaPass.h"
 #include "Passes/TosaToLLVMPass.h"
 
-namespace vortex {
+namespace zephyrus {
 
 void registerAllPasses() {
   // If your HDF5 pass is registered manually
@@ -24,4 +24,4 @@ void buildHDF5ToLLVMPipeline(mlir::OpPassManager &pm) {
   pm.addPass(mlir::createLowerToLLVMPass());
 }
 
-} // namespace vortex
+} // namespace zephyrus

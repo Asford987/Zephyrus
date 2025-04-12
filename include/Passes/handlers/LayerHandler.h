@@ -11,7 +11,7 @@ using json = nlohmann::json;
 using namespace mlir;
 using mlir::func::FuncOp;
 
-namespace vortex {
+namespace zephyrus {
   class LayerHandler {
     protected:
       std::vector<float> weightData;
@@ -45,4 +45,4 @@ namespace vortex {
     virtual void handleLayer(OpBuilder& builder, FuncOp& funcOp, const json& layer, std::vector<int64_t>& inputShape, mlir::Value& lastOutput) = 0;
   };
 
-} // namespace vortex
+} // namespace zephyrus

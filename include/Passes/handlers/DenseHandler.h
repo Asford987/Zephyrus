@@ -16,10 +16,10 @@ using json = nlohmann::json;
 using namespace mlir;
 using mlir::func::FuncOp;
 
-namespace vortex{
+namespace zephyrus{
   class DenseHandler : public LayerHandler {
     public:
       void handleLayer(OpBuilder& builder, FuncOp& funcOp, const json& layer, std::vector<int64_t>& inputShape, mlir::Value& lastOutput);
   };
 
-} // namespace vortex
+} // namespace zephyrus

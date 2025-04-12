@@ -18,7 +18,7 @@
 
 using namespace mlir;
 
-namespace vortex {
+namespace zephyrus {
 namespace {
 struct HDF5ToTosaPass : public PassWrapper<HDF5ToTosaPass, OperationPass<ModuleOp>> {
     std::string modelFile;  // Store model filename
@@ -168,4 +168,4 @@ std::unique_ptr<Pass> createHDF5ToTosaPass(const std::string &modelFile) {
     return std::make_unique<HDF5ToTosaPass>(modelFile);
 }
 
-} // namespace vortex
+} // namespace zephyrus

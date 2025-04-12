@@ -1,5 +1,0 @@
-include(MLIRConfig.cmake)
-include(include.cmake)
-include(lib.cmake)
-include(tests.cmake)
-include(packaging.cmake)

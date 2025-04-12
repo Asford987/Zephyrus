@@ -1,5 +1,5 @@
-#ifndef VORTEX_HDF5_TO_TOSA_PASS_H
-#define VORTEX_HDF5_TO_TOSA_PASS_H
+#ifndef ZEPHYRUS_HDF5_TO_TOSA_PASS_H
+#define ZEPHYRUS_HDF5_TO_TOSA_PASS_H
 
 #include "mlir/Pass/Pass.h"
 #include <vector>
@@ -7,7 +7,7 @@
 #include <nlohmann/json.hpp>
 
 
-namespace vortex {
+namespace zephyrus {
     using namespace mlir;
     using json = nlohmann::json;
     json readModelConfig(const std::string &filePath);
@@ -19,6 +19,6 @@ namespace vortex {
 
     std::unique_ptr<Pass> createHDF5ToTosaPass(const std::string &modelFile);
 
-} // namespace vortex
+} // namespace zephyrus
 
-#endif // VORTEX_HDF5_TO_TOSA_PASS_H
+#endif // ZEPHYRUS_HDF5_TO_TOSA_PASS_H

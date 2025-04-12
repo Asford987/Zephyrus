@@ -15,7 +15,7 @@ using json = nlohmann::json;
 using namespace mlir;
 using mlir::func::FuncOp;
 
-namespace vortex{
+namespace zephyrus{
   void SoftmaxHandler::handleLayer(OpBuilder& builder, FuncOp& funcOp, const json& layer, std::vector<int64_t>& inputShape, mlir::Value& lastOutput){
       Location loc = funcOp.getLoc();
       auto f32 = builder.getF32Type();
@@ -57,4 +57,4 @@ namespace vortex{
   }
 
 
-} // namespace vortex
+} // namespace zephyrus

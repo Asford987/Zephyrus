@@ -12,8 +12,8 @@
 
 using namespace mlir;
 
-namespace vortex{
+namespace zephyrus{
   // Converts std::vector<float> to DenseElementsAttr
   DenseElementsAttr convertToDenseAttr(Builder &builder, RankedTensorType type, const std::vector<float> &values);
 
-} // namespace vortex
+} // namespace zephyrus

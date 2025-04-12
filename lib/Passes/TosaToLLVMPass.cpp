@@ -18,7 +18,7 @@
 using namespace mlir;
 
 
-namespace vortex {
+namespace zephyrus {
 
   mlir::LogicalResult lowerTosaToLLVM(mlir::ModuleOp module){
     PassManager pm(module.getContext());
@@ -41,4 +41,4 @@ namespace vortex {
   }
   
 
-} // namespace vortex
+} // namespace zephyrus

@@ -1,7 +1,7 @@
 #pragma once
 #include "mlir/Pass/Pass.h"
 
-namespace vortex {
+namespace zephyrus {
 
 // Registers *your* passes
 void registerAllPasses();
@@ -9,4 +9,4 @@ void registerAllPasses();
 // Your custom pipelines
 void buildHDF5ToLLVMPipeline(mlir::OpPassManager &pm);
 
-} // namespace vortex
+} // namespace zephyrus
