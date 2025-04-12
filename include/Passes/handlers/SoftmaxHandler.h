@@ -1,3 +1,4 @@
+#pragma once
 #include <mlir/IR/Builders.h>
 #include <mlir/IR/BuiltinOps.h>
 #include <mlir/Dialect/Func/IR/FuncOps.h>
@@ -16,9 +17,6 @@ using namespace mlir;
 using mlir::func::FuncOp;
 
 namespace vortex{
-  // Converts std::vector<float> to DenseElementsAttr
-  auto convertToSoftmaxAttr(Builder &builder, RankedTensorType type, const std::vector<float> &values);
-
   class SoftmaxHandler : public LayerHandler {
     public:
     void handleLayer(OpBuilder& builder, FuncOp& funcOp, const json& layer, std::vector<int64_t>& inputShape, mlir::Value& lastOutput);

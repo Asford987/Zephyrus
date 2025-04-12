@@ -2,7 +2,6 @@
 #include <mlir/IR/BuiltinOps.h>
 #include <mlir/Dialect/Func/IR/FuncOps.h>
 #include <mlir/Dialect/Tosa/IR/TosaOps.h>
-#include <llvm/ADT/APFloat.h>
 #include <mlir/IR/Builders.h>
 #include <mlir/IR/BuiltinOps.h>
 #include <mlir/Dialect/Func/IR/FuncOps.h>
@@ -10,42 +9,15 @@
 #include <nlohmann/json.hpp>
 #include <vector>
 #include "Passes/handlers/DenseHandler.h"
-#include "DenseHandler.h"
+#include "Passes/handlers/DenseAttr.h"
 
 using json = nlohmann::json;
 using namespace mlir;
 using mlir::func::FuncOp;
 
 namespace vortex{
-  // Converts std::vector<float> to DenseElementsAttr
-  auto convertToDenseAttr(Builder &builder, RankedTensorType type, const std::vector<float> &values) {
-    SmallVector<APFloat, 4> apValues;
-    for (float v : values) {
-        apValues.push_back(APFloat(v));
-    }
-    return DenseElementsAttr::get(type, apValues);
-  }
-
   void DenseHandler::handleLayer(OpBuilder& builder, FuncOp& funcOp, const json& layer, std::vector<int64_t> &inputShape, mlir::Value &lastOutput) {
-    // Extract weight and bias data.
-    std::vector<float> weightData, biasData;
-    if (layer.contains("weights") && layer["weights"].contains("data"))
-      weightData = layer["weights"]["data"].get<std::vector<float>>();
-    if (layer.contains("biases") && layer["biases"].contains("data"))
-      biasData = layer["biases"]["data"].get<std::vector<float>>();
-
-    // Retrieve Dense layer configuration.
-    int units = layer["config"]["units"].get<int>();
-    int inputFeatures = inputShape.back();
-    // Define the weight and bias tensor shapes.
-    std::vector<int64_t> weightShape = {inputFeatures, units};
-    std::vector<int64_t> biasShape = {units};
-
-    auto weightType = RankedTensorType::get(weightShape, builder.getF32Type());
-    auto biasType = RankedTensorType::get(biasShape, builder.getF32Type());
-
-    auto weightAttr = convertToDenseAttr(builder, weightType, weightData);
-    auto biasAttr = convertToDenseAttr(builder, biasType, biasData);
+    setup(layer, builder);
 
     // Create constant ops for weights and biases.
     Value weightTensor = builder.create<tosa::ConstOp>(funcOp.getLoc(), weightType, weightAttr);
@@ -61,6 +33,7 @@ namespace vortex{
         funcOp.getLoc(), matmulOutputType, lastOutput, weightTensor);
     lastOutput = builder.create<tosa::AddOp>(
         funcOp.getLoc(), matmulOutputType, matmulOutput, biasTensor);
+    inputShape = matmulOutputShape;
   }
 
 } // namespace vortex

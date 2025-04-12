@@ -10,23 +10,20 @@
 #include <nlohmann/json.hpp>
 #include <vector>
 #include "Passes/handlers/Conv2DHandler.h"
+#include "Passes/handlers/DenseAttr.h"
 
 using json = nlohmann::json;
 using namespace mlir;
 using mlir::func::FuncOp;
 
 namespace vortex{
-  // Converts std::vector<float> to DenseElementsAttr
-  auto convertToConv2DAttr(Builder &builder, RankedTensorType type, const std::vector<float> &values) {
-    SmallVector<APFloat, 4> apValues;
-    for (float v : values) {
-        apValues.push_back(APFloat(v));
-    }
-    return DenseElementsAttr::get(type, apValues);
-  }
-
   void Conv2DHandler::handleLayer(OpBuilder& builder, FuncOp& funcOp, const json& layer, std::vector<int64_t>& inputShape, mlir::Value& lastOutput) {
+    setup(layer, builder);
 
+    // Create constant ops for weights and biases.
+    Value weightTensor = builder.create<tosa::ConstOp>(funcOp.getLoc(), weightType, weightAttr);
+    Value biasTensor = builder.create<tosa::ConstOp>(funcOp.getLoc(), biasType, biasAttr);
+    
   }
 
 } // namespace vortex

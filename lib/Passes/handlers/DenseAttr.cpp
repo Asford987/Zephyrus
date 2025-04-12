@@ -1,3 +1,4 @@
+#pragma once
 #include <mlir/IR/Builders.h>
 #include <mlir/IR/BuiltinOps.h>
 #include <mlir/Dialect/Func/IR/FuncOps.h>
@@ -7,20 +8,19 @@
 #include <mlir/IR/BuiltinOps.h>
 #include <mlir/Dialect/Func/IR/FuncOps.h>
 #include <mlir/Dialect/Tosa/IR/TosaOps.h>
-#include <nlohmann/json.hpp>
 #include <vector>
-#include "Passes/handlers/FlattenHandler.h"
-#include "Passes/handlers/DenseAttr.h"
 
 
-using json = nlohmann::json;
 using namespace mlir;
-using mlir::func::FuncOp;
 
 namespace vortex{
-  void FlattenHandler::handleLayer(OpBuilder& builder, FuncOp& funcOp, const json& layer, std::vector<int64_t>& inputShape, mlir::Value& lastOutput){
-    setup(layer, builder);
-    
+  // Converts std::vector<float> to DenseElementsAttr
+  DenseElementsAttr convertToDenseAttr(Builder &builder, RankedTensorType type, const std::vector<float> &values){
+    SmallVector<APFloat, 4> apValues;
+    for (float v : values) {
+        apValues.push_back(APFloat(v));
+    }
+    return DenseElementsAttr::get(type, apValues);
   }
 
 } // namespace vortex
