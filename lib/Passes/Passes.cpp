@@ -24,4 +24,10 @@ void buildHDF5ToLLVMPipeline(mlir::OpPassManager &pm) {
   pm.addPass(mlir::createLowerToLLVMPass());
 }
 
+LogicalResult lowerHDF5ToLLVM(ModuleOp module, llvm::StringRef file) {
+  PassManager pm(module.getContext());
+  buildHDF5ToLLVMPipeline(pm, file);
+  return pm.run(module);
+}
+
 } // namespace zephyrus

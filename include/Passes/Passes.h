@@ -9,4 +9,6 @@ void registerAllPasses();
 // Your custom pipelines
 void buildHDF5ToLLVMPipeline(mlir::OpPassManager &pm);
 
+mlir::LogicalResult lowerHDF5ToLLVM(mlir::ModuleOp module, llvm::StringRef hdf5File);
+
 } // namespace zephyrus

@@ -1,63 +1,54 @@
-cmake_minimum_required(VERSION 3.20)
-project(zephyrus LANGUAGES C CXX)
+cmake_minimum_required(VERSION 3.21)
+project(zephyrus LANGUAGES CXX)
 
-# Compiler config
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+# ---------- LLVM / MLIR -------------------------------------------------
+# If LLVM lives in /opt/llvm, expose its CMake configs:
+list(APPEND CMAKE_PREFIX_PATH "/opt/llvm/lib/cmake")
 
-# Enforce static linking where possible
-set(BUILD_SHARED_LIBS OFF)
-set(CMAKE_FIND_LIBRARY_SUFFIXES .a ${CMAKE_FIND_LIBRARY_SUFFIXES})
-
-# Find packages
 find_package(MLIR REQUIRED CONFIG)
-find_package(HDF5 REQUIRED COMPONENTS CXX)
-find_package(nlohmann_json REQUIRED)
+find_package(LLVM  REQUIRED CONFIG)
+include_directories(${LLVM_INCLUDE_DIRS})
+add_definitions(${LLVM_DEFINITIONS})
 
-message(STATUS "MLIR dir: ${MLIR_DIR}")
-message(STATUS "LLVM dir: ${LLVM_DIR}")
+# Export compile_commands.json for clangd / VSCode
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-list(APPEND CMAKE_MODULE_PATH "${MLIR_CMAKE_DIR}")
-list(APPEND CMAKE_MODULE_PATH "${LLVM_CMAKE_DIR}")
+# Use C++17 everywhere
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED YES)
 
-include(HandleLLVMOptions)
-include(LLVMConfig)
-include(AddLLVM)
-include(AddMLIR)
+# ----- external deps ----------------------------------------------------
+find_package(nlohmann_json 3.2.0 REQUIRED)      # imports nlohmann_json::nlohmann_json
+find_package(HDF5           REQUIRED COMPONENTS C CXX HL)  # HDF5::HDF5, etc.
 
-include(AddMLIR)
-include(TableGen)
-include(HandleLLVMOptions)
 
-# Static linking hints
-set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static")
+# ---------- Sub-dirs ----------------------------------------------------
+add_subdirectory(lib)            # builds libzephyrus*
+add_subdirectory(tools/zephyrus) # builds the CLI
 
-# Add your code
-add_subdirectory(include)
-add_subdirectory(lib)
-add_subdirectory(src)
+# ---------- Install headers only once ----------------------------------
+install(
+  DIRECTORY include/
+  DESTINATION include            # -> /opt/llvm/include/…
+  FILES_MATCHING PATTERN "*.h"
+)
 
-# # Optional tests
-# option(ZEPHYRUS_INCLUDE_TESTS "Build tests" OFF)
-# if(ZEPHYRUS_INCLUDE_TESTS)
-#   enable_testing()
-#   add_subdirectory(test)
-# endif()
 
-# Packaging
-set(CPACK_GENERATOR "DEB")
-set(CPACK_PACKAGE_NAME "zephyrus")
-set(CPACK_PACKAGE_VERSION "1.0.0")
-set(CPACK_PACKAGE_CONTACT "fabricio.asfora.001@gmail.com")
-set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Fabricio Asfora")
-set(CPACK_DEBIAN_PACKAGE_DEPENDS "libc6")  # Minimal runtime dependency
-set(CPACK_PACKAGE_DESCRIPTION "Zephyrus MLIR-based Neural Network Compiler")
-set(CPACK_DEBIAN_ARCHITECTURE "${CMAKE_SYSTEM_PROCESSOR}")
-set(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}_${CPACK_PACKAGE_VERSION}_${CPACK_DEBIAN_ARCHITECTURE}")
-set(CPACK_PACKAGE_INSTALL_DIRECTORY "zephyrus")
+# -----------------------------------------------------------------------
+#  DEB package
+# -----------------------------------------------------------------------
+set(CPACK_GENERATOR DEB)
+set(CPACK_PACKAGE_NAME             "zephyrus")
+set(CPACK_PACKAGE_VERSION          "0.1.0")           # <— bump on every tag
+set(CPACK_PACKAGE_VENDOR           "Zephyrus Project")
+set(CPACK_PACKAGE_CONTACT          "you@example.com")
+set(CPACK_PACKAGE_DESCRIPTION
+    "MLIR-based neural-network ahead-of-time compiler for NAOv6 robots")
+set(CPACK_DEBIAN_PACKAGE_SECTION   "devel")
+set(CPACK_DEBIAN_FILE_NAME         DEB-DEFAULT)       # zephyrus_0.1.0_amd64.deb
+set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)                # auto-detect shared-lib deps
 
-include(CPack)
+# Explicit runtime deps that dpkg-shlibdeps might miss (header-only JSON doesn’t need one)
+set(CPACK_DEBIAN_PACKAGE_DEPENDS "libhdf5-103")
 
-# Install targets (compiler + headers)
-install(DIRECTORY include/ DESTINATION include)
-install(TARGETS zephyrus DESTINATION bin)
+include(CPack)     # <-- MUST be last!
