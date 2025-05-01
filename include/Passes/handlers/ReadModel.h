@@ -1,4 +1,4 @@
-#include "HDF5ToTosaPass.h"
+#include "Passes/HDF5ToTosaPass.h"
 #include "mlir/IR/Builders.h"
 #include "mlir/IR/BuiltinOps.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"

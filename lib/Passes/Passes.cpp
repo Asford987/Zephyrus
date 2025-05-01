@@ -1,29 +1,59 @@
-#include "Passes.h"
+#include "Passes/Passes.h"
 #include "Passes/HDF5ToTosaPass.h"
-#include "Passes/TosaToLLVMPass.h"
+
+#include "llvm/Support/CommandLine.h"
+#include "mlir/Conversion/Passes.h"
+#include "mlir/Dialect/Linalg/Passes.h"
+#include "mlir/Dialect/Tosa/Transforms/Passes.h"
+#include "mlir/Target/LLVMIR/Export.h"
+#include "mlir/IR/BuiltinOps.h"
+#include "mlir/Pass/PassManager.h"
+#include "mlir/Conversion/TosaToLinalg/TosaToLinalg.h"
+#include "mlir/Conversion/SCFToControlFlow/SCFToControlFlow.h"
+#include "mlir/Conversion/ControlFlowToLLVM/ControlFlowToLLVM.h"
+#include "mlir/Conversion/MemRefToLLVM/MemRefToLLVM.h"
+#include "mlir/Conversion/ArithToLLVM/ArithToLLVM.h"
+#include "mlir/Conversion/FuncToLLVM/ConvertFuncToLLVMPass.h"
+
+
+
+using namespace mlir;
 
 namespace zephyrus {
 
-void registerAllPasses() {
-  // If your HDF5 pass is registered manually
-  PassRegistration<HDF5ToTosaPass>(
-    "hdf5-to-tosa", "Import a Keras HDF5 model into TOSA"
-  );
-}
+//— --------------------------------------------------------------------------
+// 1.  Pass registration (new API = zero-arg)
+//— --------------------------------------------------------------------------
 
-void buildHDF5ToLLVMPipeline(mlir::OpPassManager &pm) {
-  pm.addPass(createHDF5ToTosaPass(/*modelFile=*/"TODO"));
-  // Can also inline logic here:
-  pm.addPass(mlir::createTosaToLinalgPass());
+  // Define a command-line option for the input file.
+  static llvm::cl::opt<std::string> inputFilename(
+    llvm::cl::Positional,
+    llvm::cl::desc("<input file>"),
+    llvm::cl::value_desc("filename"));
+
+  // Update the registration to pass the file name from the command-line.
+  static PassRegistration<HDF5ToTosaPass> hdf5Reg(
+    []() -> std::unique_ptr<mlir::Pass> { return createHDF5ToTosaPass(inputFilename); });
+//— --------------------------------------------------------------------------
+// 2.  Pipeline builder
+//— --------------------------------------------------------------------------
+void buildHDF5ToLLVMPipeline(OpPassManager &pm, llvm::StringRef file) {
+  pm.addPass(createHDF5ToTosaPass(file.str()));
+
+  pm.addPass(tosa::createTosaToLinalg());
   pm.addPass(mlir::createConvertLinalgToLoopsPass());
-  pm.addPass(mlir::createConvertTensorToMemrefPass());
-  pm.addPass(mlir::createConvertSCFToCFPass());
-  pm.addPass(mlir::createConvertFuncToLLVMPass());
-  pm.addPass(mlir::createConvertMemRefToLLVMPass());
-  pm.addPass(mlir::createConvertArithToLLVMPass());
-  pm.addPass(mlir::createLowerToLLVMPass());
+  pm.addPass(createSCFToControlFlowPass());
+  pm.addPass(createLowerAffinePass());
+  pm.addPass(createFinalizeMemRefToLLVMConversionPass());
+  pm.addPass(createArithToLLVMConversionPass());
+  pm.addPass(createConvertFuncToLLVMPass());
+  pm.addPass(createConvertControlFlowToLLVMPass());
+  pm.addPass(createReconcileUnrealizedCastsPass());
 }
 
+//— --------------------------------------------------------------------------
+// 3.  Driver convenience wrapper
+//— --------------------------------------------------------------------------
 LogicalResult lowerHDF5ToLLVM(ModuleOp module, llvm::StringRef file) {
   PassManager pm(module.getContext());
   buildHDF5ToLLVMPipeline(pm, file);

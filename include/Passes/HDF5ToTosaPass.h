@@ -5,6 +5,8 @@
 #include <vector>
 #include <string>
 #include <nlohmann/json.hpp>
+#include "hdf5/serial/H5Cpp.h"
+#include "hdf5/serial/H5Opublic.h"
 
 
 namespace zephyrus {
@@ -15,7 +17,7 @@ namespace zephyrus {
     json readModelWeights(const std::string &filePath);
     std::vector<json> parseLayers(const json &modelConfig) ;
     void assignWeightsToLayers(std::vector<json> &layers, const json &weightsJson);
-    auto convertToDenseAttr(Builder &builder, RankedTensorType type, const std::vector<float> &values);
+    struct HDF5ToTosaPass;
 
     std::unique_ptr<Pass> createHDF5ToTosaPass(const std::string &modelFile);
 

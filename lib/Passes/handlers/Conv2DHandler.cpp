@@ -62,14 +62,16 @@ namespace zephyrus{
     // Constants
     Value weightTensor = builder.create<tosa::ConstOp>(loc, weightType, weightAttr);
     Value biasTensor = builder.create<tosa::ConstOp>(loc, biasType, biasAttr);
-  
+    
+    TypeAttr accType = TypeAttr::get(f32);
     // Conv2D
     lastOutput = builder.create<tosa::Conv2DOp>(
         loc, outputType, lastOutput, weightTensor, biasTensor,
-        builder.getI64ArrayAttr({padTop, padBottom, padLeft, padRight}),
-        builder.getI64ArrayAttr({sh, sw}),
-        builder.getI64ArrayAttr({dh, dw})
-    );
+        builder.getDenseI64ArrayAttr({padTop, padBottom, padLeft, padRight}),
+        builder.getDenseI64ArrayAttr({sh, sw}),
+        builder.getDenseI64ArrayAttr({dh, dw}),
+        accType
+      );
   
     inputShape = outputShape;
   }

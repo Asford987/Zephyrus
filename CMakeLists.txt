@@ -19,7 +19,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED YES)
 
 # ----- external deps ----------------------------------------------------
 find_package(nlohmann_json 3.2.0 REQUIRED)      # imports nlohmann_json::nlohmann_json
-find_package(HDF5           REQUIRED COMPONENTS C CXX HL)  # HDF5::HDF5, etc.
+find_package(HDF5 REQUIRED COMPONENTS CXX HL)  # HDF5::HDF5, etc.
 
 
 # ---------- Sub-dirs ----------------------------------------------------

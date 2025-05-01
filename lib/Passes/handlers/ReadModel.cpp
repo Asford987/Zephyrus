@@ -1,4 +1,4 @@
-#include "HDF5ToTosaPass.h"
+#include "Passes/HDF5ToTosaPass.h"
 #include "mlir/IR/Builders.h"
 #include "mlir/IR/BuiltinOps.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
@@ -45,10 +45,14 @@ namespace zephyrus {
 
   for (hsize_t i = 0; i < nObjs; i++) {
       std::string objName = group.getObjnameByIdx(i);
-      H5O_info2_t obj_info;
+      H5O_info_t obj_info;
       
       herr_t status = H5Oget_info_by_idx(group.getId(), ".", H5_INDEX_NAME, H5_ITER_NATIVE,
-                                i, &obj_info, H5O_INFO_ALL, H5P_DEFAULT);
+                                i, &obj_info, H5O_INFO_ALL);
+    //   H5O_info2_t obj_info;
+      
+    //   herr_t status = H5Oget_info_by_idx(group.getId(), ".", H5_INDEX_NAME, H5_ITER_NATIVE,
+    //                             i, &obj_info, H5O_INFO_ALL, H5P_DEFAULT);
       if (status < 0) {
           std::cerr << "Failed to get object info for " << objName << std::endl;
           continue;

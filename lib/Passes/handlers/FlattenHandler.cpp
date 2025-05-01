@@ -21,6 +21,8 @@ namespace zephyrus{
   void FlattenHandler::handleLayer(OpBuilder& builder, FuncOp& funcOp, const json& layer, std::vector<int64_t>& inputShape, mlir::Value& lastOutput){
     // setup(layer, builder);
     // Flatten all dimensions after batch
+    Location loc = funcOp.getLoc();
+
     int64_t batchSize = inputShape[0];
     int64_t flatSize = 1;
     for (size_t i = 1; i < inputShape.size(); ++i) {
@@ -29,10 +31,24 @@ namespace zephyrus{
 
     std::vector<int64_t> newShape = {batchSize, flatSize};
     auto outputType = RankedTensorType::get(newShape, builder.getF32Type());
+    
+    auto shapeType  = RankedTensorType::get(
+          {static_cast<int64_t>(newShape.size())}, builder.getI64Type());
 
+    llvm::ArrayRef<int64_t> shapeRef(newShape);                 // ← no makeArrayRef
+    DenseElementsAttr shapeAttr = DenseElementsAttr::get(shapeType, shapeRef);
+    Value shapeTensor = builder.create<tosa::ConstOp>(loc, shapeType, shapeAttr);
+    
     lastOutput = builder.create<tosa::ReshapeOp>(
-        funcOp.getLoc(), outputType, lastOutput,
-        builder.getI64ArrayAttr(newShape));
+      loc,
+      outputType,
+      lastOutput,
+      shapeTensor
+  );
+      
+    // lastOutput = builder.create<tosa::ReshapeOp>(
+    //     funcOp.getLoc(), outputType, lastOutput,
+    //     builder.getI64ArrayAttr(newShape));
 
     inputShape = newShape;    
   }

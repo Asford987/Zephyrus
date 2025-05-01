@@ -1,13 +1,13 @@
-#include "HDF5ToTosaPass.h"
+#include "Passes/HDF5ToTosaPass.h"
 #include "mlir/IR/Builders.h"
 #include "mlir/IR/BuiltinOps.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/Dialect/Tosa/IR/TosaOps.h"
-#include "H5Cpp.h"
+#include "hdf5/serial/H5Cpp.h"
+#include "hdf5/serial/H5Opublic.h"
 #include "llvm/ADT/APFloat.h"
 #include <iostream>
 #include <nlohmann/json.hpp>
-#include <H5Opublic.h>
 #include "Passes/handlers/ReadModel.h"
 #include "Passes/handlers/DenseHandler.h"
 #include "Passes/handlers/Conv2DHandler.h"
@@ -19,7 +19,6 @@
 using namespace mlir;
 
 namespace zephyrus {
-namespace {
 struct HDF5ToTosaPass : public PassWrapper<HDF5ToTosaPass, OperationPass<ModuleOp>> {
     std::string modelFile;  // Store model filename
 
@@ -162,7 +161,6 @@ struct HDF5ToTosaPass : public PassWrapper<HDF5ToTosaPass, OperationPass<ModuleO
     }
       
 };
-} // namespace
 
 std::unique_ptr<Pass> createHDF5ToTosaPass(const std::string &modelFile) {
     return std::make_unique<HDF5ToTosaPass>(modelFile);
