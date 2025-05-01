@@ -39,7 +39,6 @@ int main(int argc, char **argv) {
     return 1;
   }
 
-  // Write buffer to disk
   std::string error;
   auto outfile = mlir::openOutputFile(outputFile, &error);
   if (!outfile) {

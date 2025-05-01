@@ -10,8 +10,10 @@
 #include <H5Opublic.h>
 #include "Passes/handlers/ReadModel.h"
 
+
+using json = nlohmann::json;
+
 namespace zephyrus {
-  using json = nlohmann::json;  // Alias for convenience
   json readModelConfig(const std::string &filePath) {
   try {
       H5::H5File file(filePath, H5F_ACC_RDONLY);
@@ -59,32 +61,26 @@ namespace zephyrus {
       }
 
       if (obj_info.type == H5O_TYPE_DATASET) {
-          // It's a dataset—open it normally.
           H5::DataSet dataset = group.openDataSet(objName);
           H5::DataSpace dataspace = dataset.getSpace();
           int ndims = dataspace.getSimpleExtentNdims();
           std::vector<hsize_t> dims(ndims);
           dataspace.getSimpleExtentDims(dims.data());
 
-          // Compute total size
           size_t totalSize = 1;
           for (auto d : dims) {
               totalSize *= d;
           }
 
-          // Allocate space for the data
           std::vector<float> weightData(totalSize);
           dataset.read(weightData.data(), H5::PredType::NATIVE_FLOAT);
 
-          // Store both shape and data
           json weightJson;
-          weightJson["dims"] = dims;  // Shape
-          weightJson["data"] = weightData;  // Weight values
+          weightJson["dims"] = dims;
+          weightJson["data"] = weightData;
 
-          // Store under the dataset name
           groupJson[objName] = weightJson;
       } else if (obj_info.type == H5O_TYPE_GROUP) {
-          // If it's a group, recurse into it.
           H5::Group subgroup = group.openGroup(objName);
           groupJson[objName] = readGroup(subgroup);
       } else {
@@ -98,13 +94,11 @@ namespace zephyrus {
   json weightsJson;
   try {
       H5::H5File file(filePath, H5F_ACC_RDONLY);
-      // Open the group that contains the weights
       H5::Group weightsGroup = file.openGroup("model_weights");
       hsize_t nLayers = weightsGroup.getNumObjs();
       for (hsize_t i = 0; i < nLayers; i++) {
           std::string layerName = weightsGroup.getObjnameByIdx(i);
           H5::Group layerGroup = weightsGroup.openGroup(layerName);
-          // Recursively read the contents of the layer group.
           weightsJson[layerName] = readGroup(layerGroup);
       }
   } catch (H5::Exception &e) {
@@ -130,7 +124,6 @@ namespace zephyrus {
   for (const auto &layerJson : modelConfig["config"]["layers"]) {
       json newLayer = layerJson;
 
-      // Check if it's an activation layer
       bool isActivation = false;
       std::string activationType;
 
@@ -146,14 +139,13 @@ namespace zephyrus {
 
       if (isActivation) {
           newLayer["isActivationLayer"] = true;
-          newLayer["activationType"] = activationType;  // Explicitly store activation function
+          newLayer["activationType"] = activationType;
       } else {
           newLayer["isActivationLayer"] = false;
       }
 
       layers.push_back(newLayer);
 
-      // If it's not an activation layer but has an activation function, add a separate activation layer
       if (!isActivation && layerJson["config"].contains("activation")) {
           std::string act = layerJson["config"]["activation"].get<std::string>();
           if (!act.empty() && act != "linear") {

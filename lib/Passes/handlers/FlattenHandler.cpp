@@ -19,8 +19,6 @@ using mlir::func::FuncOp;
 
 namespace zephyrus{
   void FlattenHandler::handleLayer(OpBuilder& builder, FuncOp& funcOp, const json& layer, std::vector<int64_t>& inputShape, mlir::Value& lastOutput){
-    // setup(layer, builder);
-    // Flatten all dimensions after batch
     Location loc = funcOp.getLoc();
 
     int64_t batchSize = inputShape[0];
@@ -46,10 +44,6 @@ namespace zephyrus{
       shapeTensor
   );
       
-    // lastOutput = builder.create<tosa::ReshapeOp>(
-    //     funcOp.getLoc(), outputType, lastOutput,
-    //     builder.getI64ArrayAttr(newShape));
-
     inputShape = newShape;    
   }
 

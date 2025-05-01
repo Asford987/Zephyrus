@@ -29,7 +29,7 @@ namespace zephyrus{
   
     int64_t sh = strides[0];
     int64_t sw = strides[1];
-    int64_t dh = 1, dw = 1; // Default
+    int64_t dh = 1, dw = 1;
   
     int64_t batch = inputShape[0];
     int64_t inH = inputShape[1];
@@ -40,7 +40,6 @@ namespace zephyrus{
     int64_t kw = weightDim[1];
     int64_t outC = weightDim[3];
   
-    // Padding calculation
     int64_t padTop = 0, padBottom = 0, padLeft = 0, padRight = 0;
     if (paddingType == "same") {
       int64_t outH = (inH + sh - 1) / sh;
@@ -53,18 +52,15 @@ namespace zephyrus{
       padRight = padW - padLeft;
     }
   
-    // Output shape
     int64_t outH = (inH + padTop + padBottom - kh) / sh + 1;
     int64_t outW = (inW + padLeft + padRight - kw) / sw + 1;
     std::vector<int64_t> outputShape = {batch, outH, outW, outC};
     auto outputType = RankedTensorType::get(outputShape, f32);
   
-    // Constants
     Value weightTensor = builder.create<tosa::ConstOp>(loc, weightType, weightAttr);
     Value biasTensor = builder.create<tosa::ConstOp>(loc, biasType, biasAttr);
     
     TypeAttr accType = TypeAttr::get(f32);
-    // Conv2D
     lastOutput = builder.create<tosa::Conv2DOp>(
         loc, outputType, lastOutput, weightTensor, biasTensor,
         builder.getDenseI64ArrayAttr({padTop, padBottom, padLeft, padRight}),

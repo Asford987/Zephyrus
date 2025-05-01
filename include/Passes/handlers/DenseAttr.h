@@ -13,7 +13,6 @@
 using namespace mlir;
 
 namespace zephyrus{
-  // Converts std::vector<float> to DenseElementsAttr
   DenseElementsAttr convertToDenseAttr(Builder &builder, RankedTensorType type, const std::vector<float> &values);
 
 } // namespace zephyrus

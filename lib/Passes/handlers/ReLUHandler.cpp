@@ -21,7 +21,6 @@ namespace zephyrus{
     auto f32 = builder.getF32Type();
     auto inputType = RankedTensorType::get(inputShape, f32);
 
-    // ReLU is just Clamp with min=0, max=very large number
     auto zero = builder.getF32FloatAttr(0.0f);
     auto large = builder.getF32FloatAttr(std::numeric_limits<float>::max());
 

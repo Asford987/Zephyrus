@@ -21,22 +21,14 @@ using namespace mlir;
 
 namespace zephyrus {
 
-//— --------------------------------------------------------------------------
-// 1.  Pass registration (new API = zero-arg)
-//— --------------------------------------------------------------------------
+static llvm::cl::opt<std::string> inputFilename(
+  llvm::cl::Positional,
+  llvm::cl::desc("<input file>"),
+  llvm::cl::value_desc("filename"));
 
-  // Define a command-line option for the input file.
-  static llvm::cl::opt<std::string> inputFilename(
-    llvm::cl::Positional,
-    llvm::cl::desc("<input file>"),
-    llvm::cl::value_desc("filename"));
+static PassRegistration<HDF5ToTosaPass> hdf5Reg(
+  []() -> std::unique_ptr<mlir::Pass> { return createHDF5ToTosaPass(inputFilename); });
 
-  // Update the registration to pass the file name from the command-line.
-  static PassRegistration<HDF5ToTosaPass> hdf5Reg(
-    []() -> std::unique_ptr<mlir::Pass> { return createHDF5ToTosaPass(inputFilename); });
-//— --------------------------------------------------------------------------
-// 2.  Pipeline builder
-//— --------------------------------------------------------------------------
 void buildHDF5ToLLVMPipeline(OpPassManager &pm, llvm::StringRef file) {
   pm.addPass(createHDF5ToTosaPass(file.str()));
 
@@ -51,9 +43,6 @@ void buildHDF5ToLLVMPipeline(OpPassManager &pm, llvm::StringRef file) {
   pm.addPass(createReconcileUnrealizedCastsPass());
 }
 
-//— --------------------------------------------------------------------------
-// 3.  Driver convenience wrapper
-//— --------------------------------------------------------------------------
 LogicalResult lowerHDF5ToLLVM(ModuleOp module, llvm::StringRef file) {
   PassManager pm(module.getContext());
   buildHDF5ToLLVMPipeline(pm, file);

@@ -19,12 +19,9 @@ namespace zephyrus{
   void DenseHandler::handleLayer(OpBuilder& builder, FuncOp& funcOp, const json& layer, std::vector<int64_t> &inputShape, mlir::Value &lastOutput) {
     setup(layer, builder);
 
-    // Create constant ops for weights and biases.
     Value weightTensor = builder.create<tosa::ConstOp>(funcOp.getLoc(), weightType, weightAttr);
     Value biasTensor = builder.create<tosa::ConstOp>(funcOp.getLoc(), biasType, biasAttr);
 
-    // Create TOSA MatMul and Add ops.
-    // For this example, assume the output of matmul replaces the last dimension with "units".
     std::vector<int64_t> matmulOutputShape = inputShape;
     matmulOutputShape.back() = units;
     auto matmulOutputType = RankedTensorType::get(matmulOutputShape, builder.getF32Type());

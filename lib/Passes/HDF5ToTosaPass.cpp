@@ -20,7 +20,7 @@ using namespace mlir;
 
 namespace zephyrus {
 struct HDF5ToTosaPass : public PassWrapper<HDF5ToTosaPass, OperationPass<ModuleOp>> {
-    std::string modelFile;  // Store model filename
+    std::string modelFile;
 
     explicit HDF5ToTosaPass(const std::string &file) : modelFile(file) {}
 
@@ -37,14 +37,12 @@ struct HDF5ToTosaPass : public PassWrapper<HDF5ToTosaPass, OperationPass<ModuleO
         return;
       }
     
-      // Read the model configuration from the HDF5 file.
       json modelConfig = readModelConfig(modelFile);
       if (modelConfig.empty()) {
         module.emitError("Failed to read model configuration from HDF5 file.");
         return;
       }
     
-      // Extract the input shape from the model config.
       std::vector<int64_t> inputShape;
       if (modelConfig.contains("config") && modelConfig["config"].contains("build_input_shape")) {
         for (auto dim : modelConfig["config"]["build_input_shape"]) {
@@ -55,36 +53,29 @@ struct HDF5ToTosaPass : public PassWrapper<HDF5ToTosaPass, OperationPass<ModuleO
         return;
       }
     
-      // Parse the layers from the model configuration.
       std::vector<json> layers = parseLayers(modelConfig);
       if (layers.empty()) {
         module.emitError("Failed to parse HDF5 model.");
         return;
       }
     
-      // Read and assign model weights to each layer.
       json weightsJson = readModelWeights(modelFile);
       assignWeightsToLayers(layers, weightsJson);
     
-      // Determine the output shape.
-      // For simplicity, we assume the first Dense layer defines the output shape via its "units" field.
       std::vector<int64_t> outputShape = inputShape;
       for (auto &layer : layers) {
         if (layer.contains("class_name") && layer["class_name"].get<std::string>() == "Dense") {
           int units = layer["config"]["units"].get<int>();
-          outputShape.back() = units;  // Replace the last dimension.
-          // Optionally, store the output shape for later use.
+          outputShape.back() = units;
           layer["output_shape"] = outputShape;
           break;
         }
       }
-    
-      // Create the function type with the determined input and output shapes.
+
       auto tensorInputType = RankedTensorType::get(inputShape, builder.getF32Type());
       auto tensorOutputType = RankedTensorType::get(outputShape, builder.getF32Type());
       auto funcType = builder.getFunctionType({tensorInputType}, {tensorOutputType});
     
-      // Inject the "forward" function.
       builder.setInsertionPointToEnd(module.getBody());
       auto funcOp = builder.create<mlir::func::FuncOp>(module.getLoc(), "forward", funcType);
       funcOp.addEntryBlock();
@@ -94,7 +85,6 @@ struct HDF5ToTosaPass : public PassWrapper<HDF5ToTosaPass, OperationPass<ModuleO
       Value inputTensor = funcOp.getArgument(0);
       Value lastOutput = inputTensor;
     
-      // Process each layer. Here we demonstrate handling Dense layers.
       for (const auto &layer : layers) {
         if (layer.contains("class_name") && layer["class_name"].get<std::string>() == "Dense") {
           DenseHandler denseHandler;
@@ -156,7 +146,6 @@ struct HDF5ToTosaPass : public PassWrapper<HDF5ToTosaPass, OperationPass<ModuleO
         // // (Additional layer types such as Activation layers can be handled here.)
       }
     
-      // Return the final output.
       builder.create<mlir::func::ReturnOp>(funcOp.getLoc(), lastOutput);
     }
       

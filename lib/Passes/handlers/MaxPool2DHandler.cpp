@@ -20,13 +20,11 @@ namespace zephyrus{
     Location loc = funcOp.getLoc();
     auto f32 = builder.getF32Type();
   
-    // Parse config from JSON
     auto config = layer["config"];
-    std::vector<int64_t> poolSize = config["pool_size"].get<std::vector<int64_t>>(); // [kh, kw]
-    std::vector<int64_t> strides = config["strides"].get<std::vector<int64_t>>();    // [sh, sw]
+    std::vector<int64_t> poolSize = config["pool_size"].get<std::vector<int64_t>>();
+    std::vector<int64_t> strides = config["strides"].get<std::vector<int64_t>>();
     std::string paddingType = config["padding"].get<std::string>(); // "valid" or "same"
   
-    // Assume input shape: [N, H, W, C]
     int64_t batch = inputShape[0];
     int64_t inH = inputShape[1];
     int64_t inW = inputShape[2];
@@ -37,7 +35,6 @@ namespace zephyrus{
     int64_t sh = strides[0];
     int64_t sw = strides[1];
   
-    // Calculate padding
     int64_t padTop = 0, padBottom = 0, padLeft = 0, padRight = 0;
     if (paddingType == "same") {
       auto outH = (inH + sh - 1) / sh;
@@ -50,7 +47,6 @@ namespace zephyrus{
       padRight = totalPadW - padLeft;
     }
   
-    // Compute output shape
     int64_t outH = (inH + padTop + padBottom - kh) / sh + 1;
     int64_t outW = (inW + padLeft + padRight - kw) / sw + 1;
     std::vector<int64_t> outputShape = {batch, outH, outW, channels};
@@ -61,11 +57,11 @@ namespace zephyrus{
       loc,
       outputType,
       lastOutput,
-      builder.getDenseI64ArrayAttr({kh, kw}),                    // kernel
-      builder.getDenseI64ArrayAttr({sh, sw}),                    // stride
+      builder.getDenseI64ArrayAttr({kh, kw}),
+      builder.getDenseI64ArrayAttr({sh, sw}),
       builder.getDenseI64ArrayAttr({padTop, padBottom,
-                                    padLeft, padRight}),         // pad
-      builder.getStringAttr("PROPAGATE")                         // nan_mode (opt.)
+                                    padLeft, padRight}),
+      builder.getStringAttr("PROPAGATE")
   );  
   
     inputShape = outputShape;  

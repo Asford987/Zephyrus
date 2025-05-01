@@ -29,7 +29,7 @@ namespace zephyrus{
           {static_cast<int64_t>(reducedShape.size())}, builder.getI64Type());
       DenseElementsAttr shapeAttr =
           DenseElementsAttr::get(shapeType,
-                                 llvm::ArrayRef<int64_t>(reducedShape));   // ArrayRef, no makeArrayRef
+                                 llvm::ArrayRef<int64_t>(reducedShape));
   
       Value maxVals = builder.create<tosa::ReduceMaxOp>(
           loc, reducedType, lastOutput, builder.getI64IntegerAttr(axis));
