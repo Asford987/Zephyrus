@@ -22,6 +22,18 @@ target_link_libraries(zephyrus_core
     MLIRConversionPasses
     MLIRLowerToLLVM
     MLIRLinalgTransforms
+    MLIRTosaOps
+    MLIRSupport
+    MLIRIR
+    LLVMSupport
     ${HDF5_C_LIBRARIES}
     ${HDF5_CXX_LIBRARIES}
     ${HDF5_HL_LIBRARIES})
+
+set_target_properties(zephyrus_core PROPERTIES
+  LINK_SEARCH_START_STATIC TRUE
+  LINK_SEARCH_END_STATIC   TRUE
+)
+
+install(TARGETS zephyrus_core
+          ARCHIVE DESTINATION lib)

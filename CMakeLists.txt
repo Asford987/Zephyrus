@@ -9,6 +9,7 @@ find_package(MLIR REQUIRED CONFIG)
 find_package(LLVM  REQUIRED CONFIG)
 include_directories(${LLVM_INCLUDE_DIRS})
 add_definitions(${LLVM_DEFINITIONS})
+link_directories(${LLVM_LIBRARY_DIRS})
 
 # Export compile_commands.json for clangd / VSCode
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
