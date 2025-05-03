@@ -13,22 +13,25 @@ target_link_libraries(zephyrus_core
   PRIVATE
     MLIRBufferizationToMemRef
     MLIRFuncToLLVM
-    MLIRLinalgToLLVM
+    # MLIRLinalgToLLVM          # archive exists – keep
+    # MLIRConversionPasses      # archive exists – keep
+    # MLIRLowerToLLVM           # archive exists – keep
     MLIRMemRefToLLVM
     MLIRTosaToLinalg
     MLIRArithToLLVM
     MLIRSCFToControlFlow
-    MLIRTosaTransforms
-    MLIRConversionPasses
-    MLIRLowerToLLVM
+    MLIRTosaDialect           # ← NEW: replaces MLIRTosaOps
+    MLIRTosaTransforms        # already present
     MLIRLinalgTransforms
-    MLIRTosaOps
     MLIRSupport
     MLIRIR
     LLVMSupport
-    ${HDF5_C_LIBRARIES}
-    ${HDF5_CXX_LIBRARIES}
-    ${HDF5_HL_LIBRARIES})
+    HDF5::HDF5
+    # ${HDF5_C_LIBRARIES}
+    # ${HDF5_CXX_LIBRARIES}
+    # ${HDF5_HL_LIBRARIES}
+    nlohmann_json::nlohmann_json
+    )
 
 set_target_properties(zephyrus_core PROPERTIES
   LINK_SEARCH_START_STATIC TRUE

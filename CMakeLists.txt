@@ -5,6 +5,10 @@ list(APPEND CMAKE_PREFIX_PATH "/opt/llvm/lib/cmake")
 
 find_package(MLIR REQUIRED CONFIG)
 find_package(LLVM  REQUIRED CONFIG)
+execute_process(COMMAND llvm-config --libdir
+                OUTPUT_VARIABLE LLVM_LIBDIR
+                OUTPUT_STRIP_TRAILING_WHITESPACE)
+link_directories(${LLVM_LIBDIR})
 include_directories(${LLVM_INCLUDE_DIRS})
 add_definitions(${LLVM_DEFINITIONS})
 link_directories(${LLVM_LIBRARY_DIRS})
