@@ -33,10 +33,10 @@ target_link_libraries(zephyrus_core
     nlohmann_json::nlohmann_json
     )
 
-set_target_properties(zephyrus_core PROPERTIES
-  LINK_SEARCH_START_STATIC TRUE
-  LINK_SEARCH_END_STATIC   TRUE
-)
+# set_target_properties(zephyrus_core PROPERTIES
+#   LINK_SEARCH_START_STATIC TRUE
+#   LINK_SEARCH_END_STATIC   TRUE
+# )
 
 install(TARGETS zephyrus_core
           ARCHIVE DESTINATION lib)

@@ -2,6 +2,7 @@
 #include "zephyrus/Zephyrus.h"
 
 #include "mlir/Conversion/Passes.h"
+#include "mlir/Transforms/Passes.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/ExecutionEngine/OptUtils.h"
 #include "mlir/IR/BuiltinOps.h"
@@ -10,14 +11,13 @@
 #include "mlir/Pass/PassManager.h"
 #include "mlir/Target/LLVMIR/Export.h"
 #include "mlir/Target/LLVMIR/ModuleTranslation.h"
-#include "mlir/Transforms/Passes.h"
 
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/IR/LegacyPassManager.h"
 #include "llvm/MC/TargetRegistry.h"
 #include "llvm/Object/ArchiveWriter.h"
-// #include "llvm/Support/Host.h"
-// #include <llvm/Support/TargetRegistry.h>
+#include <llvm/Support/Host.h>
+#include <llvm/IRReader/IRReader.h>
 #include "llvm/Support/TargetSelect.h"
 #include "llvm/Target/TargetMachine.h"
 
