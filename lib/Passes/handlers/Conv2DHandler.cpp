@@ -15,8 +15,76 @@ using namespace mlir;
 using mlir::FuncOp;
 
 namespace zephyrus{
+  void Conv2DHandler::Conv2Dsetup(const json &layer, OpBuilder &builder) {
+    layerName = layer["config"]["name"].get<std::string>();
+    layerName = layer["config"]["name"].get<std::string>();
+
+    /* ─────── locate the weight blob ───────────────────────────── */
+    const json *wObj = nullptr;
+
+    if (layer.contains("weights") && !layer["weights"].is_null()) {
+      const auto &w = layer["weights"];
+
+      // preferred:   weights.sequential.<layerName>
+      if (w.contains("sequential") &&
+          w["sequential"].contains(layerName) &&
+          !w["sequential"][layerName].is_null()) {
+
+        wObj = &w["sequential"][layerName];
+
+      // fallback:    weights.<layerName>
+      } else if (w.contains(layerName) && !w[layerName].is_null()) {
+        wObj = &w[layerName];
+      }
+    }
+
+    // last‑chance: some exporters drop the wrapper entirely
+    if (!wObj && layer.contains(layerName))
+      wObj = &layer[layerName];
+
+    if (!wObj) {
+      llvm::errs() << "zephyrus: no weights found for layer \""
+                  << layerName << "\"\n";
+      return;                               // keep compiling but without constants
+    }
+
+  
+    auto getVecF = [](const json &obj, llvm::StringRef key) {
+      return obj.contains(key.str()) ? obj[key.str()].get<std::vector<float>>() : std::vector<float>{};
+    };
+    auto getVecI = [](const json &obj, llvm::StringRef key) {
+      return obj.contains(key.str()) ? obj[key.str()].get<std::vector<int64_t>>() : std::vector<int64_t>{};
+    };
+    
+    const json &kernel = (*wObj)["kernel"];
+    const json &bias   = (*wObj)["bias"];
+    
+    weightData = getVecF(kernel, "data");
+    if (weightData.empty()) weightData = getVecF(kernel, "value");
+    
+    weightDim  = getVecI(kernel, "dims");
+    if (weightDim.empty()) weightDim  = getVecI(kernel, "shape");
+    
+    biasData   = getVecF(bias, "data");
+    if (biasData.empty()) biasData   = getVecF(bias, "value");
+    
+    biasDim    = getVecI(bias, "dims");
+    if (biasDim.empty()) biasDim    = getVecI(bias, "shape");
+    
+    /* ───── build MLIR attributes as before ─────────────────────── */
+    units      = layer["config"].value("units",
+                   layer["config"].value("filters", 0));
+    
+    auto f32   = builder.getF32Type();
+    weightType = RankedTensorType::get(weightDim, f32);
+    biasType   = RankedTensorType::get(biasDim,   f32);
+    
+    weightAttr = convertToDenseAttr(builder, weightType, weightData);
+    biasAttr   = convertToDenseAttr(builder, biasType,   biasData);
+  }
+
   void Conv2DHandler::handleLayer(OpBuilder& builder, FuncOp& funcOp, const json& layer, std::vector<int64_t>& inputShape, mlir::Value& lastOutput) {
-    setup(layer, builder);
+    Conv2Dsetup(layer, builder);
 
     Location loc = funcOp.getLoc();
     auto f32 = builder.getF32Type();

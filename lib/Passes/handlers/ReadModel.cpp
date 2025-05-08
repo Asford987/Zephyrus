@@ -91,21 +91,21 @@ namespace zephyrus {
   }
 
   json readModelWeights(const std::string &filePath) {
-  json weightsJson;
-  try {
+    json weightsJson;
+    try {
       H5::H5File file(filePath, H5F_ACC_RDONLY);
       H5::Group weightsGroup = file.openGroup("model_weights");
       hsize_t nLayers = weightsGroup.getNumObjs();
       for (hsize_t i = 0; i < nLayers; i++) {
-          std::string layerName = weightsGroup.getObjnameByIdx(i);
-          H5::Group layerGroup = weightsGroup.openGroup(layerName);
-          weightsJson[layerName] = readGroup(layerGroup);
+        std::string layerName = weightsGroup.getObjnameByIdx(i);
+        H5::Group layerGroup = weightsGroup.openGroup(layerName);
+        weightsJson[layerName] = readGroup(layerGroup);
       }
-  } catch (H5::Exception &e) {
-      std::cerr << "Error reading model_weights from HDF5: " 
-                  << e.getDetailMsg() << std::endl;
-  }
-  return weightsJson;
+    } catch (H5::Exception &e) {
+        std::cerr << "Error reading model_weights from HDF5: " 
+                    << e.getDetailMsg() << std::endl;
+    }
+    return weightsJson;
   }
 
   std::vector<json> parseLayers(const json &modelConfig) {
@@ -159,21 +159,20 @@ namespace zephyrus {
           }
       }
   }
-
   return layers;
   }
 
   void assignWeightsToLayers(std::vector<json> &layers, const json &weightsJson) {
-  for (auto &layer : layers) {
-  std::string layerName;
-  if (layer.contains("config") && layer["config"].contains("name")) {
-    layerName = layer["config"]["name"].get<std::string>();
-  } else if (layer.contains("name")) {
-    layerName = layer["name"].get<std::string>();
-  }
-  if (!layerName.empty() && weightsJson.contains(layerName)) {
-    layer["weights"] = weightsJson[layerName];
-  }
-  }
+    for (auto &layer : layers) {
+      std::string layerName;
+      if (layer.contains("config") && layer["config"].contains("name")) {
+        layerName = layer["config"]["name"].get<std::string>();
+      } else if (layer.contains("name")) {
+        layerName = layer["name"].get<std::string>();
+      }
+      if (!layerName.empty() && weightsJson.contains(layerName)) {
+        layer["weights"] = weightsJson[layerName];
+      }
+    }
   }
 } // namespace zephyrus

@@ -32,11 +32,13 @@ static PassRegistration<HDF5ToTosaPass> hdf5Reg(
 
 void buildHDF5ToLLVMPipeline(OpPassManager &pm, llvm::StringRef file) {
   pm.addPass(createHDF5ToTosaPass(file.str()));
+  
+  OpPassManager &fpm = pm.nest<FuncOp>();
 
-  pm.addPass(tosa::createTosaToLinalgOnTensors());
-  pm.addPass(mlir::createConvertLinalgToLoopsPass());
-  pm.addPass(createLowerAffinePass());
-  pm.addPass(createLowerToCFGPass());
+  fpm.addPass(tosa::createTosaToLinalgOnTensors());
+  fpm.addPass(mlir::createConvertLinalgToLoopsPass());
+  fpm.addPass(createLowerAffinePass());
+  fpm.addPass(createLowerToCFGPass());
   pm.addPass(createLowerToLLVMPass());  
 }
 

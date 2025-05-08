@@ -18,7 +18,7 @@ namespace zephyrus{
   class Conv2DHandler : public LayerHandler {
     public:
     void handleLayer(OpBuilder& builder, FuncOp& funcOp, const json& layer, std::vector<int64_t>& inputShape, mlir::Value& lastOutput);
+    void Conv2Dsetup(const json& layer, OpBuilder& builder);
   };
-
 
 } // namespace zephyrus
