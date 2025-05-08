@@ -1,7 +1,7 @@
 #include "Passes/HDF5ToTosaPass.h"
 #include "mlir/IR/Builders.h"
 #include "mlir/IR/BuiltinOps.h"
-#include "mlir/Dialect/Func/IR/FuncOps.h"
+#include "mlir/Dialect/StandardOps/IR/Ops.h"
 #include "mlir/Dialect/Tosa/IR/TosaOps.h"
 #include "hdf5/serial/H5Cpp.h"
 #include "hdf5/serial/H5Opublic.h"
@@ -23,13 +23,19 @@ struct HDF5ToTosaPass : public PassWrapper<HDF5ToTosaPass, OperationPass<ModuleO
     std::string modelFile;
 
     explicit HDF5ToTosaPass(const std::string &file) : modelFile(file) {}
+    
+    StringRef getArgument()    const override { return "hdf5-to-tosa"; }
+    
+    StringRef getDescription() const override {
+      return "Import a Keras .h5 model and lower it to the TOSA dialect";
+    }
 
     void runOnOperation() override {
       ModuleOp module = getOperation();
       OpBuilder builder(module.getContext());
     
       // Load required dialects.
-      module.getContext()->getOrLoadDialect<mlir::func::FuncDialect>();
+      module.getContext()->getOrLoadDialect<mlir::StandardOpsDialect>();
       module.getContext()->getOrLoadDialect<mlir::tosa::TosaDialect>();
     
       if (modelFile.empty()) {
@@ -77,7 +83,7 @@ struct HDF5ToTosaPass : public PassWrapper<HDF5ToTosaPass, OperationPass<ModuleO
       auto funcType = builder.getFunctionType({tensorInputType}, {tensorOutputType});
     
       builder.setInsertionPointToEnd(module.getBody());
-      auto funcOp = builder.create<mlir::func::FuncOp>(module.getLoc(), "forward", funcType);
+      auto funcOp = builder.create<mlir::FuncOp>(module.getLoc(), "forward", funcType);
       funcOp.addEntryBlock();
       Block &entryBlock = funcOp.getBody().front();
       builder.setInsertionPointToStart(&entryBlock);
@@ -146,7 +152,7 @@ struct HDF5ToTosaPass : public PassWrapper<HDF5ToTosaPass, OperationPass<ModuleO
         // // (Additional layer types such as Activation layers can be handled here.)
       }
     
-      builder.create<mlir::func::ReturnOp>(funcOp.getLoc(), lastOutput);
+      builder.create<mlir::ReturnOp>(funcOp.getLoc(), lastOutput);
     }
       
 };

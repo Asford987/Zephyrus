@@ -1,7 +1,7 @@
 #pragma once
 #include <mlir/IR/Builders.h>
 #include <mlir/IR/BuiltinOps.h>
-#include <mlir/Dialect/Func/IR/FuncOps.h>
+#include "mlir/Dialect/StandardOps/IR/Ops.h"
 #include <mlir/Dialect/Tosa/IR/TosaOps.h>
 #include <nlohmann/json.hpp>
 #include <vector>
@@ -9,7 +9,7 @@
 
 using json = nlohmann::json;
 using namespace mlir;
-using mlir::func::FuncOp;
+using mlir::FuncOp;
 
 namespace zephyrus {
   class LayerHandler {

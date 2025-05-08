@@ -1,42 +1,31 @@
-file(GLOB_RECURSE ZEPHYRUS_SRC
-     CONFIGURE_DEPENDS
-     "${CMAKE_CURRENT_SOURCE_DIR}/Passes/*.cpp")
+# Collect all source files from the Passes directory
+file(GLOB_RECURSE ZEPHYRUS_SRC CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/Passes/*.cpp")
 
+# Create a static library (shared could work too if needed)
 add_library(zephyrus_core STATIC ${ZEPHYRUS_SRC})
 
-target_include_directories(zephyrus_core
-  PUBLIC
+# Add include paths
+target_include_directories(zephyrus_core PUBLIC
     ${PROJECT_SOURCE_DIR}/include
     ${HDF5_INCLUDE_DIRS})
 
-target_link_libraries(zephyrus_core
-  PRIVATE
-    MLIRBufferizationToMemRef
-    MLIRFuncToLLVM
-    # MLIRLinalgToLLVM          # archive exists – keep
-    # MLIRConversionPasses      # archive exists – keep
-    # MLIRLowerToLLVM           # archive exists – keep
-    MLIRMemRefToLLVM
-    MLIRTosaToLinalg
-    MLIRArithToLLVM
-    MLIRSCFToControlFlow
-    MLIRTosaDialect           # ← NEW: replaces MLIRTosaOps
-    MLIRTosaTransforms        # already present
-    MLIRLinalgTransforms
-    MLIRSupport
-    MLIRIR
-    LLVMSupport
-    HDF5::HDF5
-    # ${HDF5_C_LIBRARIES}
-    # ${HDF5_CXX_LIBRARIES}
-    # ${HDF5_HL_LIBRARIES}
-    nlohmann_json::nlohmann_json
+    get_property(MLIR_DIALECT_LIBS     GLOBAL PROPERTY MLIR_DIALECT_LIBS)     # dialect impls【turn12search1】【turn12search0】
+    get_property(MLIR_TRANSLATION_LIBS GLOBAL PROPERTY MLIR_TRANSLATION_LIBS) # e.g. MLIRTargetLLVMIRExport【turn2search0】
+    get_property(MLIR_CONVERSION_LIBS  GLOBAL PROPERTY MLIR_CONVERSION_LIBS)  # e.g. MemRefToLLVM
+    
+    # ---------------------------------------------------------------------------
+    # 4. Link everything together
+    # ---------------------------------------------------------------------------
+    target_link_libraries(zephyrus_core
+      PUBLIC
+        ${MLIR_DIALECT_LIBS}
+        ${MLIR_TRANSLATION_LIBS}
+        ${MLIR_CONVERSION_LIBS}
+        LLVM                         # single shared lib produced by LLVM_LINK_LLVM_DYLIB
+        HDF5::HDF5
+        nlohmann_json::nlohmann_json
     )
+    
 
-# set_target_properties(zephyrus_core PROPERTIES
-#   LINK_SEARCH_START_STATIC TRUE
-#   LINK_SEARCH_END_STATIC   TRUE
-# )
-
-install(TARGETS zephyrus_core
-          ARCHIVE DESTINATION lib)
+# Install only the archive (static library)
+install(TARGETS zephyrus_core ARCHIVE DESTINATION lib)

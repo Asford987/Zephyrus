@@ -1,19 +1,17 @@
 #include <mlir/IR/Builders.h>
 #include <mlir/IR/BuiltinOps.h>
-#include <mlir/Dialect/Func/IR/FuncOps.h>
+#include "mlir/Dialect/StandardOps/IR/Ops.h"
 #include <mlir/Dialect/Tosa/IR/TosaOps.h>
 #include <llvm/ADT/APFloat.h>
 #include <mlir/IR/Builders.h>
 #include <mlir/IR/BuiltinOps.h>
-#include <mlir/Dialect/Func/IR/FuncOps.h>
-#include <mlir/Dialect/Tosa/IR/TosaOps.h>
 #include <nlohmann/json.hpp>
 #include <vector>
 #include "Passes/handlers/MaxPool2DHandler.h"
 
 using json = nlohmann::json;
 using namespace mlir;
-using mlir::func::FuncOp;
+using mlir::FuncOp;
 
 namespace zephyrus{
   void MaxPool2DHandler::handleLayer(OpBuilder& builder, FuncOp& funcOp, const json& layer, std::vector<int64_t>& inputShape, mlir::Value& lastOutput){
@@ -52,18 +50,20 @@ namespace zephyrus{
     std::vector<int64_t> outputShape = {batch, outH, outW, channels};
   
     auto outputType = RankedTensorType::get(outputShape, f32);
-  
+
+    auto kernelAttr = builder.getI64ArrayAttr({kh, kw});
+    auto strideAttr = builder.getI64ArrayAttr({sh, sw});
+    auto padAttr    = builder.getI64ArrayAttr({padTop, padBottom,
+                                              padLeft, padRight});
+
     lastOutput = builder.create<tosa::MaxPool2dOp>(
-      loc,
-      outputType,
-      lastOutput,
-      builder.getDenseI64ArrayAttr({kh, kw}),
-      builder.getDenseI64ArrayAttr({sh, sw}),
-      builder.getDenseI64ArrayAttr({padTop, padBottom,
-                                    padLeft, padRight}),
-      builder.getStringAttr("PROPAGATE")
-  );  
-  
+        loc,
+        outputType,
+        lastOutput,
+        kernelAttr,
+        strideAttr,
+        padAttr);
+
     inputShape = outputShape;  
   }
 

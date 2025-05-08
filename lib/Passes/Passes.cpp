@@ -8,12 +8,13 @@
 #include "mlir/Target/LLVMIR/Export.h"
 #include "mlir/IR/BuiltinOps.h"
 #include "mlir/Pass/PassManager.h"
-#include "mlir/Conversion/TosaToLinalg/TosaToLinalg.h"
-#include "mlir/Conversion/SCFToControlFlow/SCFToControlFlow.h"
-#include "mlir/Conversion/ControlFlowToLLVM/ControlFlowToLLVM.h"
 #include "mlir/Conversion/MemRefToLLVM/MemRefToLLVM.h"
-#include "mlir/Conversion/ArithToLLVM/ArithToLLVM.h"
-#include "mlir/Conversion/FuncToLLVM/ConvertFuncToLLVMPass.h"
+#include "mlir/Conversion/TosaToLinalg/TosaToLinalg.h"
+#include "mlir/Conversion/StandardToLLVM/ConvertStandardToLLVM.h"
+#include "mlir/Conversion/SCFToStandard/SCFToStandard.h"
+#include "mlir/Conversion/LinalgToStandard/LinalgToStandard.h"
+#include "mlir/Conversion/StandardToLLVM/ConvertStandardToLLVMPass.h"
+#include "mlir/Conversion/TosaToLinalg/TosaToLinalg.h"
 
 
 
@@ -32,15 +33,11 @@ static PassRegistration<HDF5ToTosaPass> hdf5Reg(
 void buildHDF5ToLLVMPipeline(OpPassManager &pm, llvm::StringRef file) {
   pm.addPass(createHDF5ToTosaPass(file.str()));
 
-  pm.addPass(tosa::createTosaToLinalg());
+  pm.addPass(tosa::createTosaToLinalgOnTensors());
   pm.addPass(mlir::createConvertLinalgToLoopsPass());
-  pm.addPass(createSCFToControlFlowPass());
   pm.addPass(createLowerAffinePass());
-  pm.addPass(createFinalizeMemRefToLLVMConversionPass());
-  pm.addPass(createArithToLLVMConversionPass());
-  pm.addPass(createConvertFuncToLLVMPass());
-  pm.addPass(createConvertControlFlowToLLVMPass());
-  pm.addPass(createReconcileUnrealizedCastsPass());
+  pm.addPass(createLowerToCFGPass());
+  pm.addPass(createLowerToLLVMPass());  
 }
 
 LogicalResult lowerHDF5ToLLVM(ModuleOp module, llvm::StringRef file) {

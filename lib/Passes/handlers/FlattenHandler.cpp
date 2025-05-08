@@ -1,12 +1,10 @@
 #include <mlir/IR/Builders.h>
 #include <mlir/IR/BuiltinOps.h>
-#include <mlir/Dialect/Func/IR/FuncOps.h>
+#include "mlir/Dialect/StandardOps/IR/Ops.h"
 #include <mlir/Dialect/Tosa/IR/TosaOps.h>
 #include <llvm/ADT/APFloat.h>
 #include <mlir/IR/Builders.h>
 #include <mlir/IR/BuiltinOps.h>
-#include <mlir/Dialect/Func/IR/FuncOps.h>
-#include <mlir/Dialect/Tosa/IR/TosaOps.h>
 #include <nlohmann/json.hpp>
 #include <vector>
 #include "Passes/handlers/FlattenHandler.h"
@@ -15,36 +13,29 @@
 
 using json = nlohmann::json;
 using namespace mlir;
-using mlir::func::FuncOp;
+using mlir::FuncOp;
 
 namespace zephyrus{
-  void FlattenHandler::handleLayer(OpBuilder& builder, FuncOp& funcOp, const json& layer, std::vector<int64_t>& inputShape, mlir::Value& lastOutput){
+  void FlattenHandler::handleLayer(OpBuilder &builder, FuncOp &funcOp, const json &layer, std::vector<int64_t> &inputShape, Value &lastOutput) {
     Location loc = funcOp.getLoc();
 
-    int64_t batchSize = inputShape[0];
-    int64_t flatSize = 1;
-    for (size_t i = 1; i < inputShape.size(); ++i) {
-        flatSize *= inputShape[i];
-    }
+    int64_t batch = inputShape[0];
+    int64_t flat  = 1;
+    for (size_t i = 1; i < inputShape.size(); ++i)
+    flat *= inputShape[i];
 
-    std::vector<int64_t> newShape = {batchSize, flatSize};
-    auto outputType = RankedTensorType::get(newShape, builder.getF32Type());
-    
-    auto shapeType  = RankedTensorType::get(
-          {static_cast<int64_t>(newShape.size())}, builder.getI64Type());
+    std::vector<int64_t> newShape = {batch, flat};
 
-    llvm::ArrayRef<int64_t> shapeRef(newShape);                 // ← no makeArrayRef
-    DenseElementsAttr shapeAttr = DenseElementsAttr::get(shapeType, shapeRef);
-    Value shapeTensor = builder.create<tosa::ConstOp>(loc, shapeType, shapeAttr);
-    
+    auto outType = RankedTensorType::get(newShape, builder.getF32Type());
+
     lastOutput = builder.create<tosa::ReshapeOp>(
-      loc,
-      outputType,
-      lastOutput,
-      shapeTensor
-  );
-      
-    inputShape = newShape;    
-  }
+    loc,
+    outType,
+    lastOutput,
+    builder.getI64ArrayAttr(newShape));
+
+    inputShape = newShape;
+}
+
 
 } // namespace zephyrus
