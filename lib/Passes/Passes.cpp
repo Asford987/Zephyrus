@@ -19,8 +19,9 @@
 #include "mlir/Dialect/Bufferization/Transforms/Passes.h"
 #include "mlir/Dialect/Tensor/Transforms/Passes.h"
 #include "mlir/Conversion/ArithmeticToLLVM/ArithmeticToLLVM.h"
-
-
+#include "mlir/Conversion/TosaToStandard/TosaToStandard.h"
+#include "mlir/Conversion/TosaToSCF/TosaToSCF.h"
+#include "mlir/Conversion/BufferizationToMemRef/BufferizationToMemRef.h"
 
 
 using namespace mlir;
@@ -43,15 +44,34 @@ void buildHDF5ToLLVMPipeline(OpPassManager &pm, llvm::StringRef file) {
   fpm.addPass(createCanonicalizerPass());
   fpm.addPass(tosa::createTosaToLinalgNamed());
   fpm.addPass(tosa::createTosaToLinalg());
+  fpm.addPass(tosa::createTosaToStandard());
+  fpm.addPass(tosa::createTosaToSCF());
   fpm.addPass(createCanonicalizerPass());
-
+  
   fpm.addPass(createLinalgBufferizePass());
   fpm.addPass(createTensorBufferizePass());
   fpm.addPass(bufferization::createBufferDeallocationPass());
+  fpm.addPass(bufferization::createFinalizingBufferizePass());
 
-  fpm.addPass(createConvertLinalgToLoopsPass());
+  fpm.addPass(createBufferizationToMemRefPass());
+
   fpm.addPass(createLowerAffinePass());
   fpm.addPass(createLowerToCFGPass());
+  fpm.addPass(createCanonicalizerPass());
+  
+  pm.addPass(createConvertLinalgToStandardPass());
+
+  OpPassManager &cleanup = pm.nest<FuncOp>();
+  cleanup.addPass(createBufferizationToMemRefPass()); 
+  cleanup.addPass(bufferization::createFinalizingBufferizePass());
+  cleanup.addPass(createCanonicalizerPass()); 
+  cleanup.addPass(arith::createConvertArithmeticToLLVMPass());
+  
+  pm.addPass(createConvertVectorToLLVMPass());
+
+  OpPassManager &last = pm.nest<FuncOp>();
+  last.addPass(createCanonicalizerPass());
+  last.addPass(arith::createConvertArithmeticToLLVMPass());
 
   pm.addPass(createLowerToLLVMPass());
 }
