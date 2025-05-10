@@ -14,21 +14,33 @@ using namespace mlir;
 using mlir::FuncOp;
 
 namespace zephyrus{
-  void DenseHandler::handleLayer(OpBuilder& builder, FuncOp& funcOp, const json& layer, std::vector<int64_t> &inputShape, mlir::Value &lastOutput) {
+  void DenseHandler::handleLayer(OpBuilder &builder,
+        FuncOp       &funcOp,
+        const json   &layer,
+        std::vector<int64_t> &inputShape,
+        Value        &lastOutput) {
     setup(layer, builder);
 
-    Value weightTensor = builder.create<tosa::ConstOp>(funcOp.getLoc(), weightType, weightAttr);
-    Value biasTensor = builder.create<tosa::ConstOp>(funcOp.getLoc(), biasType, biasAttr);
+    Location loc = funcOp.getLoc();
+    auto f32     = builder.getF32Type();
 
-    std::vector<int64_t> matmulOutputShape = inputShape;
-    matmulOutputShape.back() = units;
-    auto matmulOutputType = RankedTensorType::get(matmulOutputShape, builder.getF32Type());
+    Value weightTensor = builder.create<tosa::ConstOp>(loc, weightType,
+                              weightAttr);
+    Value biasTensor   = builder.create<tosa::ConstOp>(loc, biasType,
+                              biasAttr);
 
-    Value matmulOutput = builder.create<tosa::MatMulOp>(
-        funcOp.getLoc(), matmulOutputType, lastOutput, weightTensor);
-    lastOutput = builder.create<tosa::AddOp>(
-        funcOp.getLoc(), matmulOutputType, matmulOutput, biasTensor);
-    inputShape = matmulOutputShape;
+    std::vector<int64_t> outShape = inputShape;
+    outShape.back() = units;
+    auto outType = RankedTensorType::get(outShape, f32);
+
+    lastOutput = builder.create<tosa::FullyConnectedOp>(
+    loc,
+    outType,
+    lastOutput,
+    weightTensor,
+    biasTensor);
+
+    inputShape = outShape;
   }
 
 } // namespace zephyrus

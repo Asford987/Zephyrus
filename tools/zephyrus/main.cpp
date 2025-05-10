@@ -15,7 +15,7 @@
 #include "llvm/IR/LegacyPassManager.h"
 #include "llvm/Object/ArchiveWriter.h"
 #include "llvm/Support/TargetSelect.h"
-#include "llvm/Support/TargetRegistry.h"
+#include "llvm/MC/TargetRegistry.h"
 #include "llvm/Support/Host.h"
 #include "llvm/IRReader/IRReader.h"
 #include "llvm/Target/TargetMachine.h"

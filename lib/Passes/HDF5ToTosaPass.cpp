@@ -101,7 +101,7 @@ struct HDF5ToTosaPass : public PassWrapper<HDF5ToTosaPass, OperationPass<ModuleO
         } else if (layer.contains("class_name") && layer["class_name"].get<std::string>() == "Flatten") {
           FlattenHandler flattenHandler;
           flattenHandler.handleLayer(builder, funcOp, layer, inputShape, lastOutput);
-        } else if (layer.contains("class_name") && layer["class_name"].get<std::string>() == "MaxPool2D") {
+        } else if (layer.contains("class_name") && layer["class_name"].get<std::string>() == "MaxPool2D" || layer["class_name"].get<std::string>() == "MaxPooling2D") {
           MaxPool2DHandler maxPool2DHandler;
           maxPool2DHandler.handleLayer(builder, funcOp, layer, inputShape, lastOutput);
         } else if (layer.contains("class_name") && layer["class_name"].get<std::string>() == "Softmax") {
@@ -117,7 +117,13 @@ struct HDF5ToTosaPass : public PassWrapper<HDF5ToTosaPass, OperationPass<ModuleO
           return;
         }
       }
-    
+      auto newResultType =
+      RankedTensorType::get(inputShape, builder.getF32Type());
+
+      auto newFuncType   =
+          builder.getFunctionType(funcOp.getArgumentTypes(), newResultType);
+
+      funcOp.setType(newFuncType);  
       builder.create<mlir::ReturnOp>(funcOp.getLoc(), lastOutput);
     }
       

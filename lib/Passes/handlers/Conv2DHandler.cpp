@@ -7,6 +7,7 @@
 #include <mlir/IR/BuiltinOps.h>
 #include <nlohmann/json.hpp>
 #include <vector>
+#include "Passes/handlers/LayerHandler.h"
 #include "Passes/handlers/Conv2DHandler.h"
 #include "Passes/handlers/DenseAttr.h"
 
@@ -19,33 +20,29 @@ namespace zephyrus{
     layerName = layer["config"]["name"].get<std::string>();
     layerName = layer["config"]["name"].get<std::string>();
 
-    /* ─────── locate the weight blob ───────────────────────────── */
     const json *wObj = nullptr;
 
     if (layer.contains("weights") && !layer["weights"].is_null()) {
       const auto &w = layer["weights"];
 
-      // preferred:   weights.sequential.<layerName>
       if (w.contains("sequential") &&
           w["sequential"].contains(layerName) &&
           !w["sequential"][layerName].is_null()) {
 
         wObj = &w["sequential"][layerName];
 
-      // fallback:    weights.<layerName>
       } else if (w.contains(layerName) && !w[layerName].is_null()) {
         wObj = &w[layerName];
       }
     }
 
-    // last‑chance: some exporters drop the wrapper entirely
     if (!wObj && layer.contains(layerName))
       wObj = &layer[layerName];
 
     if (!wObj) {
       llvm::errs() << "zephyrus: no weights found for layer \""
                   << layerName << "\"\n";
-      return;                               // keep compiling but without constants
+      return;
     }
 
   
@@ -71,7 +68,6 @@ namespace zephyrus{
     biasDim    = getVecI(bias, "dims");
     if (biasDim.empty()) biasDim    = getVecI(bias, "shape");
     
-    /* ───── build MLIR attributes as before ─────────────────────── */
     units      = layer["config"].value("units",
                    layer["config"].value("filters", 0));
     
@@ -126,10 +122,11 @@ namespace zephyrus{
     Value weightTensor = builder.create<tosa::ConstOp>(loc, weightType, weightAttr);
     Value biasTensor = builder.create<tosa::ConstOp>(loc, biasType, biasAttr);
     
-    auto padAttr      = builder.getI64ArrayAttr({padTop, padBottom,
-                                                 padLeft, padRight});
-    auto strideAttr   = builder.getI64ArrayAttr({sh, sw});
-    auto dilationAttr = builder.getI64ArrayAttr({dh, dw});
+    auto padAttr      = makeI64ArrayAttr(builder,
+                                     {padTop, padBottom, padLeft, padRight});
+    auto strideAttr   = makeI64ArrayAttr(builder, {sh, sw});
+    auto dilationAttr = makeI64ArrayAttr(builder, {dh, dw});
+
     lastOutput = builder.create<tosa::Conv2DOp>(
         loc,
         outputType,

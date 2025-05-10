@@ -41,53 +41,53 @@ namespace zephyrus {
   }
   }
 
-  json readGroup(H5::Group &group) {
-  json groupJson;
-  hsize_t nObjs = group.getNumObjs();
-
-  for (hsize_t i = 0; i < nObjs; i++) {
-      std::string objName = group.getObjnameByIdx(i);
-      H5O_info_t obj_info;
-      
-      herr_t status = H5Oget_info_by_idx(group.getId(), ".", H5_INDEX_NAME, H5_ITER_NATIVE,
-                                i, &obj_info, H5O_INFO_ALL);
-    //   H5O_info2_t obj_info;
-      
-    //   herr_t status = H5Oget_info_by_idx(group.getId(), ".", H5_INDEX_NAME, H5_ITER_NATIVE,
-    //                             i, &obj_info, H5O_INFO_ALL, H5P_DEFAULT);
-      if (status < 0) {
-          std::cerr << "Failed to get object info for " << objName << std::endl;
-          continue;
+  json readGroup(H5::Group &group)
+  {
+    json out;
+  
+    const hsize_t nObjs = group.getNumObjs();
+    for (hsize_t i = 0; i < nObjs; ++i) {
+      std::string name = group.getObjnameByIdx(i);
+  
+      H5G_obj_t kind = H5G_UNKNOWN;
+      try {
+        kind = static_cast<H5G_obj_t>(group.getObjTypeByIdx(i));
+      } catch (const H5::Exception &e) {
+        std::cerr << "Skipping child '" << name
+                  << "' (cannot determine type – " << e.getDetailMsg() << ")\n";
+        continue;
       }
-
-      if (obj_info.type == H5O_TYPE_DATASET) {
-          H5::DataSet dataset = group.openDataSet(objName);
-          H5::DataSpace dataspace = dataset.getSpace();
-          int ndims = dataspace.getSimpleExtentNdims();
-          std::vector<hsize_t> dims(ndims);
-          dataspace.getSimpleExtentDims(dims.data());
-
-          size_t totalSize = 1;
-          for (auto d : dims) {
-              totalSize *= d;
-          }
-
-          std::vector<float> weightData(totalSize);
-          dataset.read(weightData.data(), H5::PredType::NATIVE_FLOAT);
-
-          json weightJson;
-          weightJson["dims"] = dims;
-          weightJson["data"] = weightData;
-
-          groupJson[objName] = weightJson;
-      } else if (obj_info.type == H5O_TYPE_GROUP) {
-          H5::Group subgroup = group.openGroup(objName);
-          groupJson[objName] = readGroup(subgroup);
-      } else {
-          std::cerr << "Skipping object '" << objName << "' (unsupported type)." << std::endl;
+  
+      if (kind == H5G_DATASET) {
+        H5::DataSet ds     = group.openDataSet(name);
+        H5::DataSpace space = ds.getSpace();
+  
+        int rank = space.getSimpleExtentNdims();
+        std::vector<hsize_t> dims(rank);
+        space.getSimpleExtentDims(dims.data());
+  
+        size_t nElem = 1;
+        for (auto d : dims) nElem *= d;
+  
+        std::vector<float> buffer(nElem);
+        ds.read(buffer.data(), H5::PredType::NATIVE_FLOAT);
+  
+        out[name] = {
+            {"dims", dims},
+            {"data", buffer}
+        };
       }
-  }
-  return groupJson;
+      else if (kind == H5G_GROUP) {
+        H5::Group sub = group.openGroup(name);
+        out[name] = readGroup(sub);
+      }
+  
+      else {
+        std::cerr << "Skipping object '" << name
+                  << "' (unsupported HDF5 type " << kind << ")\n";
+      }
+    }
+    return out;
   }
 
   json readModelWeights(const std::string &filePath) {

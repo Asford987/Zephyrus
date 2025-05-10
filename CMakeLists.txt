@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(zephyrus LANGUAGES CXX)
+project(zephyrus LANGUAGES C CXX)
 
 list(APPEND CMAKE_PREFIX_PATH "/opt/llvm/lib/cmake")
 
