@@ -1,15 +1,19 @@
 #pragma once
 #include <mlir/IR/Builders.h>
 #include <mlir/IR/BuiltinOps.h>
-#include "mlir/Dialect/StandardOps/IR/Ops.h"
+#include "mlir/IR/BuiltinOps.h"
+#include "mlir/IR/BuiltinTypes.h"
+
 #include <mlir/Dialect/Tosa/IR/TosaOps.h>
 #include <nlohmann/json.hpp>
 #include <vector>
 #include "Passes/handlers/DenseAttr.h"
+#include "mlir/Dialect/Func/IR/FuncOps.h"
+
 
 using json = nlohmann::json;
 using namespace mlir;
-using mlir::FuncOp;
+using mlir::func::FuncOp;
 
 namespace zephyrus {
   inline mlir::DenseIntElementsAttr makeI64DenseAttr(mlir::OpBuilder &b, llvm::ArrayRef<int64_t> vals) {

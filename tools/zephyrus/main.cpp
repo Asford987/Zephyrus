@@ -3,7 +3,10 @@
 
 #include "mlir/Conversion/Passes.h"
 #include "mlir/Transforms/Passes.h"
-#include "mlir/Dialect/StandardOps/IR/Ops.h" 
+#include "mlir/IR/BuiltinOps.h"
+#include "mlir/IR/BuiltinTypes.h"
+#include "mlir/Dialect/Func/IR/FuncOps.h"
+
 #include "mlir/ExecutionEngine/OptUtils.h"
 #include "mlir/IR/BuiltinOps.h"
 #include "mlir/IR/OwningOpRef.h"

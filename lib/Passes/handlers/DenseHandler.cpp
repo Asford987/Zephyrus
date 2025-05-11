@@ -1,6 +1,9 @@
 #include <mlir/IR/Builders.h>
 #include <mlir/IR/BuiltinOps.h>
-#include "mlir/Dialect/StandardOps/IR/Ops.h"
+#include "mlir/IR/BuiltinOps.h"
+#include "mlir/IR/BuiltinTypes.h"
+#include "mlir/Dialect/Func/IR/FuncOps.h"
+
 #include <mlir/Dialect/Tosa/IR/TosaOps.h>
 #include <mlir/IR/Builders.h>
 #include <mlir/IR/BuiltinOps.h>
@@ -11,7 +14,7 @@
 
 using json = nlohmann::json;
 using namespace mlir;
-using mlir::FuncOp;
+using mlir::func::FuncOp;
 
 namespace zephyrus{
   void DenseHandler::handleLayer(OpBuilder &builder,

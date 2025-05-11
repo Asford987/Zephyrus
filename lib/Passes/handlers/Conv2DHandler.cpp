@@ -1,6 +1,8 @@
 #include <mlir/IR/Builders.h>
 #include <mlir/IR/BuiltinOps.h>
-#include "mlir/Dialect/StandardOps/IR/Ops.h"
+#include "mlir/IR/BuiltinOps.h"
+#include "mlir/IR/BuiltinTypes.h"
+
 #include <mlir/Dialect/Tosa/IR/TosaOps.h>
 #include <llvm/ADT/APFloat.h>
 #include <mlir/IR/Builders.h>
@@ -10,10 +12,12 @@
 #include "Passes/handlers/LayerHandler.h"
 #include "Passes/handlers/Conv2DHandler.h"
 #include "Passes/handlers/DenseAttr.h"
+#include "mlir/Dialect/Func/IR/FuncOps.h"
+
 
 using json = nlohmann::json;
 using namespace mlir;
-using mlir::FuncOp;
+using mlir::func::FuncOp;
 
 namespace zephyrus{
   void Conv2DHandler::Conv2Dsetup(const json &layer, OpBuilder &builder) {

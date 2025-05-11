@@ -10,18 +10,21 @@
 #include "mlir/IR/BuiltinOps.h"
 #include "mlir/Pass/PassManager.h"
 #include "mlir/Conversion/MemRefToLLVM/MemRefToLLVM.h"
-#include "mlir/Conversion/TosaToLinalg/TosaToLinalg.h"
-#include "mlir/Conversion/StandardToLLVM/ConvertStandardToLLVM.h"
-#include "mlir/Conversion/SCFToStandard/SCFToStandard.h"
 #include "mlir/Conversion/LinalgToStandard/LinalgToStandard.h"
-#include "mlir/Conversion/StandardToLLVM/ConvertStandardToLLVMPass.h"
 #include "mlir/Conversion/TosaToLinalg/TosaToLinalg.h"
 #include "mlir/Dialect/Bufferization/Transforms/Passes.h"
 #include "mlir/Dialect/Tensor/Transforms/Passes.h"
 #include "mlir/Conversion/ArithmeticToLLVM/ArithmeticToLLVM.h"
-#include "mlir/Conversion/TosaToStandard/TosaToStandard.h"
 #include "mlir/Conversion/TosaToSCF/TosaToSCF.h"
 #include "mlir/Conversion/BufferizationToMemRef/BufferizationToMemRef.h"
+#include "mlir/Conversion/FuncToLLVM/ConvertFuncToLLVM.h"
+#include "mlir/Conversion/ControlFlowToLLVM/ControlFlowToLLVM.h"
+#include "mlir/Conversion/ArithmeticToLLVM/ArithmeticToLLVM.h"
+#include "mlir/Conversion/SCFToControlFlow/SCFToControlFlow.h"
+#include "mlir/Conversion/TosaToTensor/TosaToTensor.h"
+#include "mlir/Conversion/TosaToArith/TosaToArith.h"
+#include "mlir/Conversion/FuncToLLVM/ConvertFuncToLLVMPass.h"
+#include "mlir/Dialect/Func/IR/FuncOps.h"
 
 
 using namespace mlir;
@@ -38,13 +41,14 @@ static PassRegistration<HDF5ToTosaPass> hdf5Reg(
 
 void buildHDF5ToLLVMPipeline(OpPassManager &pm, llvm::StringRef file) {
   pm.addPass(createHDF5ToTosaPass(file.str()));
-  OpPassManager &fpm = pm.nest<FuncOp>();
-  
+  OpPassManager &fpm = pm.nest<func::FuncOp>();
+
   fpm.addPass(tosa::createTosaInferShapesPass());
   fpm.addPass(createCanonicalizerPass());
   fpm.addPass(tosa::createTosaToLinalgNamed());
   fpm.addPass(tosa::createTosaToLinalg());
-  fpm.addPass(tosa::createTosaToStandard());
+  fpm.addPass(tosa::createTosaToTensor());
+  fpm.addPass(tosa::createTosaToArith());
   fpm.addPass(tosa::createTosaToSCF());
   fpm.addPass(createCanonicalizerPass());
   
@@ -56,12 +60,12 @@ void buildHDF5ToLLVMPipeline(OpPassManager &pm, llvm::StringRef file) {
   fpm.addPass(createBufferizationToMemRefPass());
 
   fpm.addPass(createLowerAffinePass());
-  fpm.addPass(createLowerToCFGPass());
+  fpm.addPass(createConvertSCFToCFPass());
   fpm.addPass(createCanonicalizerPass());
   
   pm.addPass(createConvertLinalgToStandardPass());
 
-  OpPassManager &cleanup = pm.nest<FuncOp>();
+  OpPassManager &cleanup = pm.nest<func::FuncOp>();
   cleanup.addPass(createBufferizationToMemRefPass()); 
   cleanup.addPass(bufferization::createFinalizingBufferizePass());
   cleanup.addPass(createCanonicalizerPass()); 
@@ -69,11 +73,15 @@ void buildHDF5ToLLVMPipeline(OpPassManager &pm, llvm::StringRef file) {
   
   pm.addPass(createConvertVectorToLLVMPass());
 
-  OpPassManager &last = pm.nest<FuncOp>();
+  OpPassManager &last = pm.nest<func::FuncOp>();
   last.addPass(createCanonicalizerPass());
   last.addPass(arith::createConvertArithmeticToLLVMPass());
 
-  pm.addPass(createLowerToLLVMPass());
+  pm.addPass(createConvertFuncToLLVMPass());
+  pm.addPass(cf::createConvertControlFlowToLLVMPass());
+  pm.addPass(arith::createConvertArithmeticToLLVMPass());
+  pm.addPass(createConvertFuncToLLVMPass());
+  // pm.addPass(createLowerToLLVMPass()); 
 }
 
 LogicalResult lowerHDF5ToLLVM(ModuleOp module, llvm::StringRef file) {

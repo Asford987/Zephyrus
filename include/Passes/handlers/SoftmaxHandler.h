@@ -1,17 +1,21 @@
 #pragma once
 #include <mlir/IR/Builders.h>
 #include <mlir/IR/BuiltinOps.h>
-#include "mlir/Dialect/StandardOps/IR/Ops.h"
+#include "mlir/IR/BuiltinOps.h"
+#include "mlir/IR/BuiltinTypes.h"
+
 #include <llvm/ADT/APFloat.h>
 #include <mlir/IR/Builders.h>
 #include <mlir/IR/BuiltinOps.h>
 #include <nlohmann/json.hpp>
 #include <vector>
 #include "Passes/handlers/LayerHandler.h"
+#include "mlir/Dialect/Func/IR/FuncOps.h"
+
 
 using json = nlohmann::json;
 using namespace mlir;
-using mlir::FuncOp;
+using mlir::func::FuncOp;
 
 namespace zephyrus{
   class SoftmaxHandler : public LayerHandler {

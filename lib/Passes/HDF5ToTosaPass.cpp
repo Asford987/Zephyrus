@@ -1,8 +1,11 @@
 #include "Passes/HDF5ToTosaPass.h"
 #include "mlir/IR/Builders.h"
 #include "mlir/IR/BuiltinOps.h"
-#include "mlir/Dialect/StandardOps/IR/Ops.h"
-#include "mlir/Dialect/Tosa/IR/TosaOps.h"
+#include "mlir/IR/BuiltinOps.h"
+#include "mlir/IR/BuiltinTypes.h"
+#include "mlir/IR/BuiltinOps.h"
+#include "mlir/IR/BuiltinTypes.h"
+
 #include "hdf5/serial/H5Cpp.h"
 #include "hdf5/serial/H5Opublic.h"
 #include "llvm/ADT/APFloat.h"
@@ -15,6 +18,12 @@
 #include "Passes/handlers/MaxPool2DHandler.h"
 #include "Passes/handlers/FlattenHandler.h"
 #include "Passes/handlers/ReLUHandler.h"
+#include "mlir/Dialect/Func/IR/FuncOps.h"
+#include "mlir/Dialect/ControlFlow/IR/ControlFlow.h"
+#include "mlir/Dialect/Arithmetic/IR/Arithmetic.h"
+#include "mlir/Dialect/MemRef/IR/MemRef.h"
+#include "mlir/Dialect/Tensor/IR/Tensor.h"
+#include "mlir/Dialect/Tosa/IR/TosaOps.h"
 
 using namespace mlir;
 
@@ -35,8 +44,13 @@ struct HDF5ToTosaPass : public PassWrapper<HDF5ToTosaPass, OperationPass<ModuleO
       OpBuilder builder(module.getContext());
     
       // Load required dialects.
-      module.getContext()->getOrLoadDialect<mlir::StandardOpsDialect>();
-      module.getContext()->getOrLoadDialect<mlir::tosa::TosaDialect>();
+      auto *ctx = module.getContext();
+      ctx->getOrLoadDialect<mlir::func::FuncDialect>();
+      ctx->getOrLoadDialect<mlir::cf::ControlFlowDialect>();
+      ctx->getOrLoadDialect<mlir::arith::ArithmeticDialect>();
+      ctx->getOrLoadDialect<mlir::memref::MemRefDialect>();
+      ctx->getOrLoadDialect<mlir::tensor::TensorDialect>();
+      ctx->getOrLoadDialect<mlir::tosa::TosaDialect>();
     
       if (modelFile.empty()) {
         module.emitError("No model file provided. Use -model-file=<path>");
@@ -83,7 +97,7 @@ struct HDF5ToTosaPass : public PassWrapper<HDF5ToTosaPass, OperationPass<ModuleO
       auto funcType = builder.getFunctionType({tensorInputType}, {tensorOutputType});
     
       builder.setInsertionPointToEnd(module.getBody());
-      auto funcOp = builder.create<mlir::FuncOp>(module.getLoc(), "forward", funcType);
+      auto funcOp = builder.create<mlir::func::FuncOp>(module.getLoc(), "forward", funcType);
       funcOp.addEntryBlock();
       Block &entryBlock = funcOp.getBody().front();
       builder.setInsertionPointToStart(&entryBlock);
@@ -124,7 +138,7 @@ struct HDF5ToTosaPass : public PassWrapper<HDF5ToTosaPass, OperationPass<ModuleO
           builder.getFunctionType(funcOp.getArgumentTypes(), newResultType);
 
       funcOp.setType(newFuncType);  
-      builder.create<mlir::ReturnOp>(funcOp.getLoc(), lastOutput);
+      builder.create<mlir::func::ReturnOp>(funcOp.getLoc(), lastOutput);
     }
       
 };
