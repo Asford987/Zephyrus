@@ -20,10 +20,11 @@
 #include "Passes/handlers/ReLUHandler.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/Dialect/ControlFlow/IR/ControlFlow.h"
-#include "mlir/Dialect/Arithmetic/IR/Arithmetic.h"
+#include "mlir/Dialect/Arith/IR/Arith.h"
 #include "mlir/Dialect/MemRef/IR/MemRef.h"
 #include "mlir/Dialect/Tensor/IR/Tensor.h"
 #include "mlir/Dialect/Tosa/IR/TosaOps.h"
+
 
 using namespace mlir;
 
@@ -47,7 +48,7 @@ struct HDF5ToTosaPass : public PassWrapper<HDF5ToTosaPass, OperationPass<ModuleO
       auto *ctx = module.getContext();
       ctx->getOrLoadDialect<mlir::func::FuncDialect>();
       ctx->getOrLoadDialect<mlir::cf::ControlFlowDialect>();
-      ctx->getOrLoadDialect<mlir::arith::ArithmeticDialect>();
+      ctx->getOrLoadDialect<mlir::arith::ArithDialect>();
       ctx->getOrLoadDialect<mlir::memref::MemRefDialect>();
       ctx->getOrLoadDialect<mlir::tensor::TensorDialect>();
       ctx->getOrLoadDialect<mlir::tosa::TosaDialect>();
@@ -62,20 +63,31 @@ struct HDF5ToTosaPass : public PassWrapper<HDF5ToTosaPass, OperationPass<ModuleO
         module.emitError("Failed to read model configuration from HDF5 file.");
         return;
       }
-    
-      std::vector<int64_t> inputShape;
-      if (modelConfig.contains("config") && modelConfig["config"].contains("build_input_shape")) {
-        for (auto dim : modelConfig["config"]["build_input_shape"]) {
-          inputShape.push_back(dim.is_null() ? -1 : dim.get<int64_t>());
-        }
-      } else {
-        module.emitError("Invalid model_config JSON: missing build_input_shape");
-        return;
-      }
-    
+
       std::vector<json> layers = parseLayers(modelConfig);
       if (layers.empty()) {
         module.emitError("Failed to parse HDF5 model.");
+        return;
+      }
+
+      std::vector<int64_t> inputShape;
+      bool found = false;
+
+      for (const auto &layer : layers) {
+        if (layer.contains("class_name") && layer["class_name"] == "InputLayer") {
+          const auto &cfg = layer["config"];
+          if (cfg.contains("batch_shape") && cfg["batch_shape"].is_array()) {
+            for (const auto &dim : cfg["batch_shape"]) {
+              inputShape.push_back(dim.is_null() ? mlir::ShapedType::kDynamic : dim.get<int64_t>());
+            }
+            found = true;
+            break;
+          }
+        }
+      }
+
+      if (!found) {
+        module.emitError("No InputLayer with batch_shape found in parsed layers.");
         return;
       }
     

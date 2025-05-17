@@ -7,9 +7,12 @@
 #include "mlir/IR/BuiltinTypes.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 
+#include "mlir/Target/LLVMIR/Export.h" 
 #include "mlir/ExecutionEngine/OptUtils.h"
 #include "mlir/IR/BuiltinOps.h"
 #include "mlir/IR/OwningOpRef.h"
+#include "mlir/Target/LLVMIR/Dialect/LLVMIR/LLVMToLLVMIRTranslation.h"
+#include "mlir/Target/LLVMIR/Dialect/Builtin/BuiltinToLLVMIRTranslation.h"
 #include "mlir/Pass/PassManager.h"
 #include "mlir/Target/LLVMIR/Export.h"
 #include "mlir/Target/LLVMIR/ModuleTranslation.h"
@@ -52,40 +55,67 @@ static cl::opt<bool> emitLLVM("emit-llvm",
       
 namespace zephyrus {
   bool compileModel(StringRef hdf5, std::string &out, const CompileOptions &opt) {
-    DialectRegistry reg; registerAllDialects(reg);
-    MLIRContext ctx(reg);  ctx.loadAllAvailableDialects();
+    DialectRegistry reg;
+    registerAllDialects(reg);
+    mlir::registerBuiltinDialectTranslation(reg);
+    mlir::registerLLVMDialectTranslation(reg);
+
+    MLIRContext ctx(reg);
+    ctx.loadAllAvailableDialects();
+
     OwningOpRef<ModuleOp> mod(ModuleOp::create(UnknownLoc::get(&ctx)));
-  
+
     mlir::PassManager pm(&ctx);
     buildHDF5ToLLVMPipeline(pm, hdf5);
     if (failed(pm.run(*mod))) return true;
-  
+
+    // Translate MLIR → LLVM IR
     LLVMContext llvmCtx;
-    auto llvmMod = translateModuleToLLVMIR(*mod, llvmCtx);
+    std::unique_ptr<llvm::Module> llvmMod =
+        mlir::translateModuleToLLVMIR(*mod, llvmCtx);
     if (!llvmMod) return true;
-  
-    if (opt.emitLLVMIR) {
-      std::string tmp; raw_string_ostream os(tmp);
-      llvmMod->print(os, nullptr);  out.swap(tmp);  return false;
-    }
-  
-    InitializeNativeTarget(); InitializeNativeTargetAsmPrinter();
+
+    // 🔹 Create the TargetMachine first
+    llvm::InitializeNativeTarget();
+    llvm::InitializeNativeTargetAsmPrinter();
+
+    std::string triple = llvm::sys::getDefaultTargetTriple();
     std::string err;
-    auto *T = TargetRegistry::lookupTarget(sys::getDefaultTargetTriple(), err);
-    if (!T) { errs() << err << '\n'; return true; }
-  
-    auto TM = std::unique_ptr<TargetMachine>(
-        T->createTargetMachine(sys::getDefaultTargetTriple(), "generic", "",
-                               TargetOptions(), Reloc::PIC_, CodeModel::Small));
-  
-    SmallVector<char, 0> obj; raw_svector_ostream objOS(obj);
-    legacy::PassManager cg;
-    if (TM->addPassesToEmitFile(cg, objOS, nullptr, CGFT_ObjectFile)) return true;
+    const llvm::Target *T = llvm::TargetRegistry::lookupTarget(triple, err);
+    if (!T) {
+      llvm::errs() << err << '\n';
+      return true;
+    }
+
+    std::unique_ptr<llvm::TargetMachine> TM(
+        T->createTargetMachine(triple, "generic", "", llvm::TargetOptions(),
+                              llvm::Reloc::PIC_, llvm::CodeModel::Small));
+
+    // 🔹 Update the module with the TargetMachine info
+    llvmMod->setTargetTriple(triple);
+    llvmMod->setDataLayout(TM->createDataLayout());
+
+    // Emit textual LLVM IR if requested
+    if (opt.emitLLVMIR) {
+      std::string tmp;
+      llvm::raw_string_ostream os(tmp);
+      llvmMod->print(os, nullptr);
+      out.swap(tmp);
+      return false;
+    }
+
+    // Emit object code
+    llvm::SmallVector<char, 0> obj;
+    llvm::raw_svector_ostream objOS(obj);
+    llvm::legacy::PassManager cg;
+    if (TM->addPassesToEmitFile(cg, objOS, nullptr, llvm::CGFT_ObjectFile))
+      return true;
     cg.run(*llvmMod);
-  
+
     out.assign(obj.begin(), obj.end());
     return false;
   }
+
 } // namespace zephyrus
 
 int main(int argc, char **argv) {

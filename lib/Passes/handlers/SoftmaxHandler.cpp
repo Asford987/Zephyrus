@@ -38,7 +38,7 @@ namespace zephyrus{
 
     Value maxValsBroadcast = builder.create<tosa::ReshapeOp>(
     loc, inputType, maxVals,
-    builder.getI64ArrayAttr(reducedShape));
+    builder.getDenseI64ArrayAttr(reducedShape));
 
     Value centered = builder.create<tosa::SubOp>(
     loc, inputType, lastOutput, maxValsBroadcast);
@@ -50,7 +50,7 @@ namespace zephyrus{
 
     Value sumExpBroadcast = builder.create<tosa::ReshapeOp>(
     loc, inputType, sumExp,
-    builder.getI64ArrayAttr(reducedShape));
+    builder.getDenseI64ArrayAttr(reducedShape));
 
     Value reciprocal = builder.create<tosa::ReciprocalOp>(
     loc, inputType, sumExpBroadcast);

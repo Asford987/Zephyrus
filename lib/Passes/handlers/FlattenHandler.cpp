@@ -35,7 +35,7 @@ namespace zephyrus{
     loc,
     outType,
     lastOutput,
-    builder.getI64ArrayAttr(newShape));
+    builder.getDenseI64ArrayAttr(newShape));
 
     inputShape = newShape;
 }

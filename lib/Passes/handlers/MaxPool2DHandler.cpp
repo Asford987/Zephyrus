@@ -54,9 +54,9 @@ namespace zephyrus{
   
     auto outputType = RankedTensorType::get(outputShape, f32);
 
-    auto kernelAttr = builder.getI64ArrayAttr({kh, kw});
-    auto strideAttr = builder.getI64ArrayAttr({sh, sw});
-    auto padAttr    = builder.getI64ArrayAttr({padTop, padBottom,
+    auto kernelAttr = builder.getDenseI64ArrayAttr({kh, kw});
+    auto strideAttr = builder.getDenseI64ArrayAttr({sh, sw});
+    auto padAttr    = builder.getDenseI64ArrayAttr({padTop, padBottom,
                                               padLeft, padRight});
 
     lastOutput = builder.create<tosa::MaxPool2dOp>(

@@ -126,16 +126,22 @@ namespace zephyrus{
     Value weightTensor = builder.create<tosa::ConstOp>(loc, weightType, weightAttr);
     Value biasTensor = builder.create<tosa::ConstOp>(loc, biasType, biasAttr);
     
-    auto padAttr      = makeI64ArrayAttr(builder,
-                                     {padTop, padBottom, padLeft, padRight});
-    auto strideAttr   = makeI64ArrayAttr(builder, {sh, sw});
-    auto dilationAttr = makeI64ArrayAttr(builder, {dh, dw});
+    auto padAttr      = builder.getDenseI64ArrayAttr(
+                            {padTop, padBottom, padLeft, padRight});
+    auto strideAttr   = builder.getDenseI64ArrayAttr({sh, sw});
+    auto dilationAttr = builder.getDenseI64ArrayAttr({dh, dw});
 
     lastOutput = builder.create<tosa::Conv2DOp>(
         loc,
         outputType,
-        lastOutput, weightTensor, biasTensor,
-        padAttr, strideAttr, dilationAttr);
+        lastOutput,
+        weightTensor,
+        biasTensor,
+        padAttr,
+        strideAttr,
+        dilationAttr
+    );
+
       
   
     inputShape = outputShape;
