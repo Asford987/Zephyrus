@@ -33,8 +33,8 @@ namespace zephyrus{
     auto reducedType = RankedTensorType::get(reducedShape, f32);
 
     Value maxVals = builder.create<tosa::ReduceMaxOp>(
-    loc, reducedType,      /*input   */ lastOutput,
-    builder.getI64IntegerAttr(axis));   // axis
+    loc, reducedType, lastOutput,
+    builder.getI64IntegerAttr(axis));
 
     Value maxValsBroadcast = builder.create<tosa::ReshapeOp>(
     loc, inputType, maxVals,
@@ -56,7 +56,7 @@ namespace zephyrus{
     loc, inputType, sumExpBroadcast);
 
     Value softmaxOut = builder.create<tosa::MulOp>(
-    loc, inputType, expTensor, reciprocal, /*shift*/ 0u);
+    loc, inputType, expTensor, reciprocal, 0u);
 
     lastOutput = softmaxOut;
   }

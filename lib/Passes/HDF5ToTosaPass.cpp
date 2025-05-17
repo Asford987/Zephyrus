@@ -34,7 +34,7 @@ struct HDF5ToTosaPass : public PassWrapper<HDF5ToTosaPass, OperationPass<ModuleO
 
     explicit HDF5ToTosaPass(const std::string &file) : modelFile(file) {}
     
-    StringRef getArgument()    const override { return "hdf5-to-tosa"; }
+    StringRef getArgument() const override { return "hdf5-to-tosa"; }
     
     StringRef getDescription() const override {
       return "Import a Keras .h5 model and lower it to the TOSA dialect";

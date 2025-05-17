@@ -43,10 +43,8 @@ static PassRegistration<HDF5ToTosaPass> hdf5Reg(
   []() -> std::unique_ptr<mlir::Pass> { return createHDF5ToTosaPass(inputFilename); });
 
 void buildHDF5ToLLVMPipeline(OpPassManager &pm, llvm::StringRef hdf5Path) {
-  // 1) import (.h5 → TOSA)
   pm.addPass(createHDF5ToTosaPass(hdf5Path.str()));
 
-  // 2) TOSA → tensor / linalg / arith / scf
   pm.addNestedPass<func::FuncOp>(tosa::createTosaToTensor());
   pm.addNestedPass<func::FuncOp>(tosa::createTosaToLinalgNamed());
   pm.addNestedPass<func::FuncOp>(tosa::createTosaToLinalg());
@@ -55,7 +53,7 @@ void buildHDF5ToLLVMPipeline(OpPassManager &pm, llvm::StringRef hdf5Path) {
   pm.addPass(createCanonicalizerPass());
   pm.addPass(createCSEPass());
   pm.addPass(bufferization::createEmptyTensorToAllocTensorPass());
-  // 3) One-shot bufferisation
+
   bufferization::OneShotBufferizationOptions opts;
   opts.bufferizeFunctionBoundaries = true;
   opts.allowReturnAllocs           = true;
@@ -66,21 +64,19 @@ void buildHDF5ToLLVMPipeline(OpPassManager &pm, llvm::StringRef hdf5Path) {
   pm.addPass(createCanonicalizerPass());
   pm.addPass(createCSEPass());
 
-  // 4) linalg / scf → plain CFG
   pm.addNestedPass<func::FuncOp>(createConvertLinalgToLoopsPass());
   pm.addNestedPass<func::FuncOp>(createConvertSCFToCFPass());
   pm.addPass(createLowerAffinePass());
   pm.addPass(createCanonicalizerPass());
   pm.addPass(createCSEPass());
 
-  // 5)  Dialect conversion to LLVM IR  (MLIR 17)
   pm.addPass(memref::createExpandStridedMetadataPass()); 
-  pm.addPass(createConvertMathToLLVMPass());            // math.*
-  pm.addPass(createConvertControlFlowToLLVMPass()); // cf.*
-  pm.addPass(createArithToLLVMConversionPass());           // arith.*
+  pm.addPass(createConvertMathToLLVMPass());
+  pm.addPass(createConvertControlFlowToLLVMPass());
+  pm.addPass(createArithToLLVMConversionPass());
   pm.addPass(mlir::createConvertVectorToLLVMPass()); 
-  pm.addPass(createFinalizeMemRefToLLVMConversionPass());          // memref.*
-  pm.addPass(mlir::createConvertFuncToLLVMPass());       // func.func
+  pm.addPass(createFinalizeMemRefToLLVMConversionPass());
+  pm.addPass(mlir::createConvertFuncToLLVMPass());
   pm.addPass(mlir::createReconcileUnrealizedCastsPass());
 
 }

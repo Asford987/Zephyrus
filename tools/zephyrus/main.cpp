@@ -69,13 +69,11 @@ namespace zephyrus {
     buildHDF5ToLLVMPipeline(pm, hdf5);
     if (failed(pm.run(*mod))) return true;
 
-    // Translate MLIR → LLVM IR
     LLVMContext llvmCtx;
     std::unique_ptr<llvm::Module> llvmMod =
         mlir::translateModuleToLLVMIR(*mod, llvmCtx);
     if (!llvmMod) return true;
 
-    // 🔹 Create the TargetMachine first
     llvm::InitializeNativeTarget();
     llvm::InitializeNativeTargetAsmPrinter();
 
@@ -91,11 +89,9 @@ namespace zephyrus {
         T->createTargetMachine(triple, "generic", "", llvm::TargetOptions(),
                               llvm::Reloc::PIC_, llvm::CodeModel::Small));
 
-    // 🔹 Update the module with the TargetMachine info
     llvmMod->setTargetTriple(triple);
     llvmMod->setDataLayout(TM->createDataLayout());
 
-    // Emit textual LLVM IR if requested
     if (opt.emitLLVMIR) {
       std::string tmp;
       llvm::raw_string_ostream os(tmp);
@@ -104,7 +100,6 @@ namespace zephyrus {
       return false;
     }
 
-    // Emit object code
     llvm::SmallVector<char, 0> obj;
     llvm::raw_svector_ostream objOS(obj);
     llvm::legacy::PassManager cg;
