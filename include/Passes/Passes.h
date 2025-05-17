@@ -1,6 +1,6 @@
 #pragma once
-#include "mlir/IR/BuiltinOps.h"          // mlir::ModuleOp
-#include "mlir/Pass/Pass.h"              // mlir::LogicalResult / OpPassManager
+#include "mlir/IR/BuiltinOps.h"
+#include "mlir/Pass/Pass.h"
 #include "llvm/ADT/StringRef.h"
 
 namespace zephyrus {
